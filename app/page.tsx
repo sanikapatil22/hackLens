@@ -12,6 +12,7 @@ import { HackOrSafeQuiz } from '@/components/hack-or-safe-quiz';
 import { LearnSecurity } from '@/components/learn-security';
 import { CompareSites } from '@/components/compare-sites';
 import { CompareResults } from '@/components/compare-results';
+import { InteractiveDemo } from '@/components/interactive-demo';
 import { quizQuestions } from '@/lib/quiz-questions';
 
 export default function Home() {
@@ -166,6 +167,13 @@ export default function Home() {
                 </>
               )}
             </>
+          )}
+
+          {/* Interactive Demo Tab */}
+          {activeTab === 'interactive' && (
+            <div className="flex flex-col items-center">
+              <InteractiveDemo />
+            </div>
           )}
 
           {/* Compare Sites Tab */}
