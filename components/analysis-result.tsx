@@ -1,17 +1,8 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
+import { SecurityFinding as SecurityFindingType } from '@/types/security';
 import { SecurityFinding } from './security-finding';
-
-interface Finding {
-  category: string;
-  title: string;
-  whatINoticed: string;
-  howIAttack: string;
-  whatCouldHappen: string;
-  howToFix: string;
-  severity: 'low' | 'medium' | 'high';
-}
+import { Card } from '@/components/ui/card';
 
 interface AnalysisResultProps {
   result: any;
@@ -35,43 +26,68 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
     );
   }
 
-  const findings: Finding[] = result.findings || [];
+  const findings: SecurityFindingType[] = result.findings || [];
+  const riskScore = result.overallRiskScore || 0;
+
+  const getRiskColor = (score: number) => {
+    if (score >= 75) return 'text-destructive';
+    if (score >= 50) return 'text-accent';
+    if (score >= 25) return 'text-yellow-500';
+    return 'text-green-500';
+  };
 
   return (
     <div className="space-y-6">
       <Card className="bg-card border border-border p-6">
-        <h2 className="text-2xl font-bold mb-2">Security Analysis Report</h2>
-        <p className="text-muted-foreground">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:text-accent"
-          >
-            {url}
-          </a>
+        <h2 className="text-2xl font-bold mb-4">Security Analysis Report</h2>
+        <p className="text-muted-foreground mb-6">
+          {url.startsWith('http') ? (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-accent"
+            >
+              {url}
+            </a>
+          ) : (
+            <span>{url}</span>
+          )}
         </p>
-        <div className="mt-4 flex gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Findings</p>
-            <p className="text-2xl font-bold text-primary">{findings.length}</p>
+
+        {/* Risk Score and Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-background/50 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-1">Overall Risk Score</p>
+            <p className={`text-3xl font-bold ${getRiskColor(riskScore)}`}>{riskScore}%</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Severity Mix</p>
-            <div className="flex gap-2 mt-1">
+
+          <div className="bg-background/50 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-1">Total Findings</p>
+            <p className="text-3xl font-bold text-primary">{findings.length}</p>
+          </div>
+
+          <div className="bg-background/50 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-1">Severity Breakdown</p>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              {findings.filter((f) => f.severity === 'critical').length > 0 && (
+                <span className="px-2 py-1 bg-destructive/20 text-destructive text-xs rounded font-semibold">
+                  Critical: {findings.filter((f) => f.severity === 'critical').length}
+                </span>
+              )}
               {findings.filter((f) => f.severity === 'high').length > 0 && (
-                <span className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded">
-                  High
+                <span className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded font-semibold">
+                  High: {findings.filter((f) => f.severity === 'high').length}
                 </span>
               )}
               {findings.filter((f) => f.severity === 'medium').length > 0 && (
-                <span className="px-2 py-1 bg-yellow-900/20 text-yellow-400 text-xs rounded">
-                  Medium
+                <span className="px-2 py-1 bg-yellow-900/20 text-yellow-400 text-xs rounded font-semibold">
+                  Medium: {findings.filter((f) => f.severity === 'medium').length}
                 </span>
               )}
               {findings.filter((f) => f.severity === 'low').length > 0 && (
-                <span className="px-2 py-1 bg-blue-900/20 text-blue-400 text-xs rounded">
-                  Low
+                <span className="px-2 py-1 bg-blue-900/20 text-blue-400 text-xs rounded font-semibold">
+                  Low: {findings.filter((f) => f.severity === 'low').length}
                 </span>
               )}
             </div>
@@ -81,32 +97,32 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
 
       {findings.length === 0 ? (
         <Card className="bg-card border border-border p-8 text-center">
-          <p className="text-lg font-semibold mb-2">🎉 Looks Pretty Solid!</p>
+          <p className="text-lg font-semibold mb-2">Looks Pretty Solid!</p>
           <p className="text-muted-foreground">
-            This website appears to have good basic security practices. But remember,
+            This site appears to have good basic security practices. But remember,
             security is never 100% perfect—there&apos;s always room to improve!
           </p>
         </Card>
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Here&apos;s what I found. Click on each finding to learn more.
+            Here&apos;s what I found. Click on each finding to see code examples, attack timelines, and hacker confidence scores.
           </p>
-          {findings.map((finding, index) => (
-            <SecurityFinding key={index} finding={finding} />
-          ))}
+          <div className="space-y-4">
+            {findings.map((finding) => (
+              <SecurityFinding key={finding.id} finding={finding} />
+            ))}
+          </div>
         </div>
       )}
 
       <Card className="bg-card border border-border p-6">
-        <h3 className="text-lg font-semibold mb-3">🤝 Remember</h3>
+        <h3 className="text-lg font-semibold mb-3">Remember</h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
-          <li>✓ Security is a journey, not a destination</li>
-          <li>✓ Always test changes in a safe environment first</li>
-          <li>✓ Keep learning and stay curious about security</li>
-          <li>
-            ✓ If you find real vulnerabilities, report them responsibly to the site owner
-          </li>
+          <li>Security is a journey, not a destination</li>
+          <li>Always test changes in a safe environment first</li>
+          <li>Keep learning and stay curious about security</li>
+          <li>If you find real vulnerabilities, report them responsibly to the site owner</li>
         </ul>
       </Card>
     </div>
