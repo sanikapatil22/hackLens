@@ -62,9 +62,10 @@ export interface SecurityFinding {
   id: string;
   title: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
-  category: string;
+  category: 'hacking' | 'performance' | 'compliance' | 'seo' | 'accessibility' | 'general';
+  riskType?: string; // "SQL Injection", "XSS", "Performance Bottleneck", "GDPR Violation", etc.
   observed: string;
-  hackerPerspective: string;
+  hackerPerspective?: string;
   impact: string;
   fix: string;
   codeExample?: CodeExample;
@@ -104,4 +105,35 @@ export interface QuizResults {
   totalPoints: number;
   difficulty: 'easy' | 'medium' | 'hard';
   completedAt: string;
+}
+
+export interface SiteComparison {
+  site1: {
+    url: string;
+    riskScore: number;
+    criticalCount: number;
+    highCount: number;
+  };
+  site2: {
+    url: string;
+    riskScore: number;
+    criticalCount: number;
+    highCount: number;
+  };
+  isSite1Safer: boolean;
+  riskDifference: number;
+}
+
+export interface BeforeAfterComparison {
+  metric: string;
+  before: {
+    value: number | string;
+    description: string;
+  };
+  after: {
+    value: number | string;
+    description: string;
+  };
+  improvementPercentage: number;
+  impact: string;
 }

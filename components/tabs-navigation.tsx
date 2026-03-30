@@ -1,6 +1,6 @@
 'use client';
 
-import { Globe, Upload, BookOpen, Zap } from 'lucide-react';
+import { Globe, Upload, BookOpen, Zap, BarChart3 } from 'lucide-react';
 
 interface Tab {
   id: string;
@@ -10,6 +10,7 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: 'website', label: 'Analyze Website', icon: <Globe className="w-4 h-4" /> },
+  { id: 'compare', label: 'Compare Sites', icon: <BarChart3 className="w-4 h-4" /> },
   { id: 'html', label: 'Upload HTML', icon: <Upload className="w-4 h-4" /> },
   { id: 'quiz', label: 'Hack or Safe', icon: <Zap className="w-4 h-4" /> },
   { id: 'learn', label: 'Learn Security', icon: <BookOpen className="w-4 h-4" /> },

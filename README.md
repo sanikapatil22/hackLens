@@ -1,19 +1,40 @@
-# 🎯 HackerBuddy - Friendly Security Analyzer
+# 🎯 HackerBuddy - Advanced Security Learning Platform
 
-A playful, educational web application that analyzes website security vulnerabilities from a "friendly hacker's" perspective. Learn about common security weaknesses in simple, non-scary terms!
+A playful, educational web application that analyzes websites for security, performance, compliance, SEO, and accessibility issues. Learn from a "friendly hacker's" perspective in simple, non-scary terms!
 
-## 🌟 Features
+## 🌟 Core Features
 
-- **Website URL Analysis**: Enter any public website to scan for common security issues
-- **Friendly Explanations**: Learn about vulnerabilities using the "hacker's perspective" format:
-  - 🔍 What I Noticed
-  - 😈 How I'd Attack This
-  - 💥 What Could Happen
-  - 🛠 How to Fix It
+### Analysis & Comparison
+- **🔍 Website Analysis** - Scan any public website for vulnerabilities
+- **⚖️ Compare Sites** - Side-by-side comparison of two websites' security posture
+- **📁 HTML Upload** - Analyze local .html files instantly
+- **📊 Risk Scoring** - Overall risk score with severity breakdown and category filtering
 
-- **Severity Levels**: Issues are categorized as Low, Medium, or High risk
-- **Educational Focus**: Perfect for learning security best practices without judgment
-- **Dark Mode UI**: Modern, tech-forward design optimized for readability
+### Five Risk Categories (Not Just Hacking!)
+- **🔓 Security/Hacking** - HTTPS, headers, exploits, attack vectors
+- **⚡ Performance** - Compression, speed, bandwidth optimization
+- **📋 Compliance & Privacy** - GDPR, privacy policies, data protection
+- **🔎 SEO & Discoverability** - Search optimization, metadata, structured data
+- **♿ Accessibility** - WCAG compliance, screen readers, keyboard navigation
+
+### Interactive Learning
+- **🧪 Try Attack Sandbox** - Type actual payloads to see how attacks work (safely!)
+- **🎮 Hack or Safe Quiz** - Gamified challenges with difficulty levels and scoring
+- **📈 Attack Timeline** - Step-by-step visualization of exploitation process
+- **📊 Before vs After** - Visualize impact of implementing security fixes
+- **💻 Code Examples** - Vulnerable vs secure code side-by-side comparison
+
+### Educational Features
+- **🧠 Hacker Confidence Meter** - Shows exploit difficulty, common attack vectors, success rates
+- **🎤 Explain Like I'm 5** - Toggle for simplified explanations with real-world analogies
+- **📚 Learn Security Tab** - Pre-built example findings demonstrating all features
+- **🎨 Beautiful Dark UI** - Modern, tech-forward design optimized for learning
+
+### Results Interface
+- **Category Filtering** - Filter findings by Security, Performance, Compliance, SEO, Accessibility
+- **Severity Breakdown** - View Critical, High, Medium, Low issue counts
+- **Expandable Details** - Click findings to see code examples, attack timelines, and confidence scores
+- **Multi-perspective** - Each finding explained from hacker, user, developer perspectives
 
 ## 🚀 Quick Start
 
@@ -25,29 +46,66 @@ A playful, educational web application that analyzes website security vulnerabil
 ```bash
 # Clone and setup
 git clone <your-repo>
-cd my-project
+cd hackerbuddy
 pnpm install
-
-# Create environment file (optional)
-cp .env.example .env.local
 
 # Run development server
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) to start learning!
 
-## 📋 What Gets Analyzed
+### How to Use
 
-The analyzer checks for:
+1. **Analyze Website Tab** - Enter any URL to scan for security, performance, compliance, SEO, and accessibility issues
+2. **Compare Sites Tab** - Enter two URLs to compare their security posture side-by-side
+3. **Upload HTML Tab** - Upload a local .html file for instant analysis
+4. **Hack or Safe Tab** - Take the security knowledge quiz with difficulty levels
+5. **Learn Security Tab** - Study pre-built examples showing all features in action
 
-1. **HTTPS/SSL Status** - Is the site using encrypted connections?
-2. **Security Headers** - Is the site properly configured with:
-   - X-Frame-Options
-   - X-Content-Type-Options
-   - Strict-Transport-Security (HSTS)
-3. **Information Disclosure** - Is the server leaking version information?
-4. **General Recommendations** - Security best practices
+Each finding includes:
+- 🔍 What was observed
+- 😈 How hackers would exploit it
+- 💥 What could happen
+- 🛠 How to fix it
+- Optional: Code examples, attack timeline, confidence metrics, simplified ELI5 explanation
+
+## 📋 Complete Analysis Checklist
+
+### Security & Hacking
+- HTTPS/SSL encryption status
+- Security headers (X-Frame-Options, X-Content-Type-Options, HSTS)
+- Server banner exposure
+- Attack vector analysis
+- Vulnerability confidence scoring
+
+### Performance
+- Content compression (gzip) availability
+- Page load optimization opportunities
+- Bandwidth reduction recommendations
+- User experience impact analysis
+
+### Compliance & Privacy
+- GDPR compliance requirements
+- Privacy policy presence
+- Data protection measures
+- Legal risk assessment
+- Cookie consent mechanisms
+
+### SEO & Discoverability
+- Meta tags and descriptions
+- Structured data (Schema.org)
+- Mobile responsiveness
+- Search engine optimization
+- Sitemap configuration
+- Traffic impact estimation
+
+### Accessibility
+- WCAG compliance verification
+- Screen reader compatibility
+- Keyboard navigation support
+- Color contrast analysis
+- Inclusive design recommendations
 
 ## 🛡️ Security Notes
 
@@ -60,24 +118,43 @@ The analyzer checks for:
 ## 🏗️ Project Structure
 
 ```
-├── app/
-│   ├── page.tsx              # Main page
-│   ├── layout.tsx            # Root layout
-│   ├── globals.css           # Global styles & theme
-│   └── api/
-│       └── analyze/
-│           └── route.ts      # Security analysis API
-├── components/
-│   ├── header.tsx            # App header
-│   ├── hero.tsx              # Hero section
-│   ├── analysis-form.tsx     # URL input form
-│   ├── analysis-result.tsx   # Results display
-│   ├── security-finding.tsx  # Individual finding card
-│   ├── loading-state.tsx     # Loading spinner
-│   └── ui/                   # shadcn/ui components
-├── .env.example              # Environment variables template
-└── package.json
+app/
+├── page.tsx                  # Main app with tab navigation
+├── layout.tsx                # Root layout with dark theme
+├── globals.css               # Tailwind & design tokens
+└── api/
+    ├── analyze/route.ts      # Website security analysis
+    └── analyze-html/route.ts # HTML file analysis
 
+components/
+├── analysis-form.tsx              # URL input form
+├── analysis-result.tsx            # Results with category filtering
+├── security-finding.tsx           # Individual finding display
+├── attack-timeline.tsx            # Step-by-step exploitation
+├── before-after-comparison.tsx    # Fix impact visualization
+├── before-after-metrics.tsx       # Improvement tracking
+├── code-fix-snippets.tsx          # Code examples
+├── compare-sites.tsx              # Comparison form
+├── compare-results.tsx            # Site comparison display
+├── explain-like-im-five.tsx       # Simplified explanations
+├── fix-before-after-showcase.tsx  # Before/after code showcase
+├── fix-improvement-tracker.tsx    # Impact metrics
+├── hack-or-safe-quiz.tsx          # Gamified quiz
+├── hacker-confidence-meter.tsx    # Risk metrics display
+├── html-upload.tsx                # File upload component
+├── learn-security.tsx             # Educational examples
+├── tabs-navigation.tsx            # Tab system
+├── try-attack-sandbox.tsx         # Interactive testing
+└── ui/                            # shadcn/ui components
+
+types/
+└── security.ts               # TypeScript interfaces & types
+
+lib/
+└── quiz-questions.ts         # Gamified quiz questions
+
+.env.example                  # Environment template
+FEATURES.md                   # Detailed feature documentation
 ```
 
 ## 🎨 Design System
@@ -88,20 +165,26 @@ The analyzer checks for:
 
 ## 🔧 Technology Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript
+- **Frontend**: React 19 with Server Components
+- **Styling**: Tailwind CSS v4 with semantic design tokens
+- **UI Components**: shadcn/ui (buttons, cards, inputs, etc.)
 - **Icons**: Lucide React
-- **Database**: None (stateless analysis)
+- **Architecture**: Component-based with API routes
+- **Deployment**: Optimized for Vercel, works anywhere with Node.js
 
 ## 📚 Learning Resources
 
-If you find vulnerabilities in your own sites, here are good resources:
-
+For deeper learning:
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/) - Common vulnerabilities
 - [MDN Web Docs - Security](https://developer.mozilla.org/en-US/docs/Web/Security) - In-depth guides
-- [Security Headers](https://securityheaders.com) - Check your headers
-- [Mozilla Observatory](https://observatory.mozilla.org/) - Similar tool by Mozilla
+- [Security Headers](https://securityheaders.com) - Check your security headers
+- [Mozilla Observatory](https://observatory.mozilla.org/) - Similar analysis tool
+- [WCAG Guidelines](https://www.w3.org/WAI/WCAG21/quickref/) - Accessibility standards
+- [Google SEO Starter Guide](https://developers.google.com/search/docs/beginner/seo-starter-guide) - SEO basics
+
+See [FEATURES.md](./FEATURES.md) for complete documentation of all interactive features.
 
 ## 💡 Tips for Using HackerBuddy
 

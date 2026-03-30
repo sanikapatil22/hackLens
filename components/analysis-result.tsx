@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { SecurityFinding as SecurityFindingType } from '@/types/security';
 import { SecurityFinding } from './security-finding';
 import { Card } from '@/components/ui/card';
@@ -9,7 +10,27 @@ interface AnalysisResultProps {
   url: string;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  hacking: 'Security (Hacking)',
+  performance: 'Performance',
+  compliance: 'Compliance & Privacy',
+  seo: 'SEO & Discoverability',
+  accessibility: 'Accessibility',
+  general: 'General',
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  hacking: 'bg-red-900/20 text-red-400',
+  performance: 'bg-orange-900/20 text-orange-400',
+  compliance: 'bg-purple-900/20 text-purple-400',
+  seo: 'bg-blue-900/20 text-blue-400',
+  accessibility: 'bg-cyan-900/20 text-cyan-400',
+  general: 'bg-gray-900/20 text-gray-400',
+};
+
 export function AnalysisResult({ result, url }: AnalysisResultProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
   if (result.error) {
     return (
       <Card className="bg-card border border-border p-8">
@@ -28,6 +49,9 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
 
   const findings: SecurityFindingType[] = result.findings || [];
   const riskScore = result.overallRiskScore || 0;
+  const filteredFindings = selectedCategory
+    ? findings.filter((f) => f.category === selectedCategory)
+    : findings;
 
   const getRiskColor = (score: number) => {
     if (score >= 75) return 'text-destructive';
@@ -95,7 +119,44 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
         </div>
       </Card>
 
-      {findings.length === 0 ? (
+      {/* Category Filter */}
+      {findings.length > 0 && (
+        <Card className="bg-card border border-border p-4">
+          <p className="text-sm text-muted-foreground mb-3">Filter by Category:</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                selectedCategory === null
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary/20 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All ({findings.length})
+            </button>
+            {Array.from(
+              new Map(findings.map((f) => [f.category, f])).entries()
+            ).map(([category]) => {
+              const count = findings.filter((f) => f.category === category).length;
+              return (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    selectedCategory === category
+                      ? 'bg-primary text-primary-foreground'
+                      : `${CATEGORY_COLORS[category]} hover:opacity-80`
+                  }`}
+                >
+                  {CATEGORY_LABELS[category] || category} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {filteredFindings.length === 0 ? (
         <Card className="bg-card border border-border p-8 text-center">
           <p className="text-lg font-semibold mb-2">Looks Pretty Solid!</p>
           <p className="text-muted-foreground">
@@ -108,8 +169,16 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
           <p className="text-sm text-muted-foreground">
             Here&apos;s what I found. Click on each finding to see code examples, attack timelines, and hacker confidence scores.
           </p>
+          {selectedCategory && (
+            <p className="text-sm text-primary font-medium">
+              Showing {filteredFindings.length} findings in{' '}
+              <span className={CATEGORY_COLORS[selectedCategory]}>
+                {CATEGORY_LABELS[selectedCategory]}
+              </span>
+            </p>
+          )}
           <div className="space-y-4">
-            {findings.map((finding) => (
+            {filteredFindings.map((finding) => (
               <SecurityFinding key={finding.id} finding={finding} />
             ))}
           </div>

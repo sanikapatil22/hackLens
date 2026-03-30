@@ -194,6 +194,98 @@ https://example.com (direct connection)
           },
         });
       }
+
+      // Add non-hacking risk findings (Performance, Compliance, SEO, Accessibility)
+      // These are important for overall site quality
+      if (!headers.get('content-encoding')) {
+        findings.push({
+          id: 'no-compression',
+          category: 'performance',
+          riskType: 'Performance Bottleneck',
+          title: 'Missing Content Compression',
+          severity: 'medium',
+          observed:
+            'Your site does not appear to use content compression (gzip). This means larger files are being sent to users.',
+          impact:
+            'Slower page load times, higher bandwidth costs, and poor user experience especially on mobile connections.',
+          fix:
+            'Enable gzip compression on your web server. For Apache: mod_deflate. For Nginx: gzip on; in nginx.conf. For Node.js: use compression middleware.',
+          eli5: {
+            simple: 'Compression is like zipping a file. Smaller files = faster downloads.',
+            analogy: 'Sending uncompressed files is like sending a book instead of a summary.',
+            example:
+              'A 1MB image can be compressed to 200KB with gzip, making your site 5x faster.',
+          },
+        });
+      }
+
+      // Check for accessibility issues
+      findings.push({
+        id: 'accessibility-check',
+        category: 'accessibility',
+        riskType: 'Accessibility Issue',
+        title: 'Verify WCAG Compliance',
+        severity: 'medium',
+        observed:
+          'We cannot fully verify accessibility compliance from HTTP headers alone, but many sites miss important accessibility features.',
+        impact:
+          'Users with disabilities may not be able to use your site. You could also face legal issues under WCAG guidelines.',
+        fix:
+          'Audit your site with tools like Axe DevTools or WAVE. Ensure proper heading structure, alt text for images, keyboard navigation, and color contrast.',
+        eli5: {
+          simple:
+            'Accessibility means everyone can use your site, even people with disabilities.',
+          analogy:
+            'It\'s like building a wheelchair ramp—it helps people in wheelchairs, but also helps parents with strollers.',
+          example:
+            'Blind users use screen readers. If your images have no alt text, they see "image" instead of what it shows.',
+        },
+      });
+
+      // SEO check
+      findings.push({
+        id: 'seo-basics',
+        category: 'seo',
+        riskType: 'SEO Issue',
+        title: 'SEO Best Practices',
+        severity: 'low',
+        observed:
+          'Basic SEO factors contribute to your search ranking and visibility. Some sites may be missing key SEO elements.',
+        impact:
+          'Poor SEO means fewer people will find your site through search engines, resulting in less organic traffic.',
+        fix:
+          'Ensure your site has proper page titles, meta descriptions, structured data (Schema.org), mobile responsiveness, and a sitemap. Use tools like Google Search Console.',
+        eli5: {
+          simple:
+            'SEO is how Google finds and ranks your site. Better SEO = more people find you.',
+          analogy: 'SEO is like putting your shop in a good location with a clear sign.',
+          example:
+            'If your site title is "Welcome to my site" instead of "Bakery in NYC", Google shows it to fewer people looking for bakeries.',
+        },
+      });
+
+      // GDPR/Privacy check
+      findings.push({
+        id: 'privacy-policy',
+        category: 'compliance',
+        riskType: 'Compliance Issue',
+        title: 'Privacy & Compliance',
+        severity: 'medium',
+        observed:
+          'Websites handling user data should have clear privacy policies and comply with regulations like GDPR, CCPA, and others.',
+        impact:
+          'Without proper privacy policies and compliance, you risk fines (GDPR can be up to 4% of revenue), legal action, and user distrust.',
+        fix:
+          'Create a clear privacy policy. If you collect user data, implement proper consent mechanisms, data processing agreements, and ensure data protection measures.',
+        eli5: {
+          simple:
+            'Privacy compliance is telling users what data you collect and how you use it.',
+          analogy:
+            'It\'s like telling customers upfront if you\'re taking photos of them and what you\'ll do with those photos.',
+          example:
+            'GDPR requires you to ask permission before using cookies. Without it, users in Europe see annoying cookie banners.',
+        },
+      });
     } catch (fetchError) {
       // If we can't reach the site, it might be blocked or down
       const errorMsg =
