@@ -25,19 +25,22 @@ interface TabsNavigationProps {
 
 export function TabsNavigation({ activeTab, onTabChange }: TabsNavigationProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 border-b border-border">
+    <div className="flex gap-1 overflow-x-auto pb-0 border-b border-border/40 bg-background/50">
       {TABS.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-t-lg whitespace-nowrap transition-colors font-medium text-sm ${
+          className={`flex items-center gap-2 px-4 py-3 rounded-none whitespace-nowrap transition-all font-medium text-sm font-mono relative group ${
             activeTab === tab.id
-              ? 'bg-primary text-primary-foreground border-b-2 border-primary'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           {tab.icon}
-          {tab.label}
+          <span>{tab.label}</span>
+          {activeTab === tab.id && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary via-accent to-primary"></div>
+          )}
         </button>
       ))}
     </div>

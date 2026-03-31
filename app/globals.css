@@ -41,39 +41,39 @@
 }
 
 .dark {
-  /* Dark mode colors - tech-forward aesthetic */
-  --background: oklch(0.08 0.01 280);
-  --foreground: oklch(0.95 0.01 0);
-  --card: oklch(0.12 0.02 280);
+  /* Dark mode colors - professional hacker/developer aesthetic */
+  --background: oklch(0.06 0.008 260); /* Near-black background */
+  --foreground: oklch(0.95 0.01 0); /* Off-white text */
+  --card: oklch(0.11 0.01 260); /* Slightly elevated card background */
   --card-foreground: oklch(0.93 0.01 0);
-  --popover: oklch(0.1 0.01 280);
+  --popover: oklch(0.1 0.01 260);
   --popover-foreground: oklch(0.95 0.01 0);
-  --primary: oklch(0.6 0.25 280);
-  --primary-foreground: oklch(0.08 0.01 280);
-  --secondary: oklch(0.2 0.03 280);
-  --secondary-foreground: oklch(0.9 0.02 0);
-  --muted: oklch(0.25 0.02 280);
-  --muted-foreground: oklch(0.65 0.05 280);
-  --accent: oklch(0.65 0.28 350);
-  --accent-foreground: oklch(0.08 0.01 280);
-  --destructive: oklch(0.5 0.18 25);
+  --primary: oklch(0.55 0.3 180); /* Cyan/electric blue primary */
+  --primary-foreground: oklch(0.06 0.008 260);
+  --secondary: oklch(0.18 0.02 260); /* Deep blue-grey */
+  --secondary-foreground: oklch(0.88 0.02 0);
+  --muted: oklch(0.22 0.01 260); /* Subtle grey */
+  --muted-foreground: oklch(0.6 0.04 260);
+  --accent: oklch(0.65 0.35 150); /* Neon green accent */
+  --accent-foreground: oklch(0.06 0.008 260);
+  --destructive: oklch(0.48 0.25 25); /* Red danger */
   --destructive-foreground: oklch(0.95 0.01 0);
-  --border: oklch(0.2 0.02 280);
-  --input: oklch(0.15 0.02 280);
-  --ring: oklch(0.6 0.25 280);
-  --chart-1: oklch(0.6 0.28 280);
-  --chart-2: oklch(0.65 0.25 10);
-  --chart-3: oklch(0.55 0.25 160);
-  --chart-4: oklch(0.7 0.22 350);
-  --chart-5: oklch(0.5 0.22 280);
-  --sidebar: oklch(0.1 0.01 280);
+  --border: oklch(0.15 0.01 260); /* Subtle dark borders */
+  --input: oklch(0.1 0.01 260); /* Dark input fields */
+  --ring: oklch(0.55 0.3 180); /* Cyan ring for focus */
+  --chart-1: oklch(0.55 0.3 180); /* Cyan */
+  --chart-2: oklch(0.65 0.35 150); /* Neon green */
+  --chart-3: oklch(0.5 0.25 25); /* Red */
+  --chart-4: oklch(0.6 0.28 350); /* Pink/magenta */
+  --chart-5: oklch(0.45 0.25 200); /* Blue */
+  --sidebar: oklch(0.08 0.01 260);
   --sidebar-foreground: oklch(0.93 0.01 0);
-  --sidebar-primary: oklch(0.6 0.25 280);
-  --sidebar-primary-foreground: oklch(0.08 0.01 280);
-  --sidebar-accent: oklch(0.65 0.28 350);
-  --sidebar-accent-foreground: oklch(0.08 0.01 280);
-  --sidebar-border: oklch(0.2 0.02 280);
-  --sidebar-ring: oklch(0.6 0.25 280);
+  --sidebar-primary: oklch(0.55 0.3 180);
+  --sidebar-primary-foreground: oklch(0.06 0.008 260);
+  --sidebar-accent: oklch(0.65 0.35 150);
+  --sidebar-accent-foreground: oklch(0.06 0.008 260);
+  --sidebar-border: oklch(0.15 0.01 260);
+  --sidebar-ring: oklch(0.55 0.3 180);
 }
 
 @theme inline {
@@ -123,5 +123,28 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: 
+      radial-gradient(circle at 20% 50%, oklch(0.12 0.01 260) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, oklch(0.1 0.008 180) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: oklch(0.08 0.01 260);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.25 0.02 260);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.35 0.02 260);
   }
 }
