@@ -12,6 +12,8 @@ import { HackOrSafeQuiz } from '@/components/hack-or-safe-quiz';
 import { LearnSecurity } from '@/components/learn-security';
 import { CompareSites } from '@/components/compare-sites';
 import { CompareResults } from '@/components/compare-results';
+import { InteractiveDemo } from '@/components/interactive-demo';
+import { LiveUrlDemo } from '@/components/live-url-demo';
 import { quizQuestions } from '@/lib/quiz-questions';
 
 export default function Home() {
@@ -23,6 +25,8 @@ export default function Home() {
   const [compareResult, setCompareResult] = useState(null);
   const [compareSite1Data, setCompareSite1Data] = useState(null);
   const [compareSite2Data, setCompareSite2Data] = useState(null);
+  const [liveDemoUrl, setLiveDemoUrl] = useState('');
+  const [liveDemoFindings, setLiveDemoFindings] = useState<any[]>([]);
 
   const handleAnalyzeWebsite = async (inputUrl: string) => {
     setUrl(inputUrl);
@@ -166,6 +170,32 @@ export default function Home() {
                 </>
               )}
             </>
+          )}
+
+          {/* Live Hacking Demo Tab */}
+          {activeTab === 'live-demo' && (
+            <div className="flex flex-col items-center w-full">
+              <LiveUrlDemo 
+                url={liveDemoUrl} 
+                findings={liveDemoFindings}
+                onAnalyze={(url) => {
+                  setLiveDemoUrl(url);
+                  handleAnalyzeWebsite(url).then(() => {
+                    // After analysis, populate findings for live demo
+                    if (result?.findings) {
+                      setLiveDemoFindings(result.findings);
+                    }
+                  });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Interactive Demo Tab */}
+          {activeTab === 'interactive' && (
+            <div className="flex flex-col items-center">
+              <InteractiveDemo />
+            </div>
           )}
 
           {/* Compare Sites Tab */}
