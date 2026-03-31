@@ -8,11 +8,13 @@ import { ExplainLikeImFive } from './explain-like-im-five';
 import { HackerConfidenceMeter } from './hacker-confidence-meter';
 import { TryAttackSandbox } from './try-attack-sandbox';
 import { Card } from '@/components/ui/card';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Zap } from 'lucide-react';
 import { useState } from 'react';
 
 interface SecurityFindingProps {
   finding: SecurityFindingType;
+  url?: string;
+  onTryLiveDemo?: (findingId: string, url: string) => void;
 }
 
 const severityConfig = {
@@ -22,7 +24,7 @@ const severityConfig = {
   low: { bg: 'bg-blue-900/20', text: 'text-blue-400', label: 'Low Risk' },
 };
 
-export function SecurityFinding({ finding }: SecurityFindingProps) {
+export function SecurityFinding({ finding, url, onTryLiveDemo }: SecurityFindingProps) {
   const [expanded, setExpanded] = useState(false);
   const config = severityConfig[finding.severity];
 
@@ -72,6 +74,17 @@ export function SecurityFinding({ finding }: SecurityFindingProps) {
               <p className="text-muted-foreground text-sm">{finding.fix}</p>
             </div>
           </div>
+
+          {/* Try Live Demo Button */}
+          {url && onTryLiveDemo && (
+            <button
+              onClick={() => onTryLiveDemo(finding.id, url)}
+              className="w-full px-4 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 transition-colors flex items-center justify-center gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              Try Live Demo for {url.split('//')[1]?.split('/')[0] || url}
+            </button>
+          )}
 
           {/* Divider */}
           <div className="border-t border-border/50 my-4" />

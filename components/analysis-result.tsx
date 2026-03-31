@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { SecurityFinding as SecurityFindingType } from '@/types/security';
 import { SecurityFinding } from './security-finding';
+import { LiveUrlDemo } from './live-url-demo';
 import { Card } from '@/components/ui/card';
+import { X } from 'lucide-react';
 
 interface AnalysisResultProps {
   result: any;
@@ -30,6 +32,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export function AnalysisResult({ result, url }: AnalysisResultProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showLiveDemo, setShowLiveDemo] = useState(false);
+  const [selectedFinding, setSelectedFinding] = useState<string | null>(null);
+
+  const handleTryLiveDemo = (findingId: string, _url: string) => {
+    setSelectedFinding(findingId);
+    setShowLiveDemo(true);
+  };
 
   if (result.error) {
     return (
@@ -59,6 +68,21 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
     if (score >= 25) return 'text-yellow-500';
     return 'text-green-500';
   };
+
+  // If live demo is open, show it
+  if (showLiveDemo) {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setShowLiveDemo(false)}
+          className="text-primary hover:text-accent transition-colors flex items-center gap-2"
+        >
+          ← Back to Analysis
+        </button>
+        <LiveUrlDemo url={url} findings={findings} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -179,7 +203,12 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
           )}
           <div className="space-y-4">
             {filteredFindings.map((finding) => (
-              <SecurityFinding key={finding.id} finding={finding} />
+              <SecurityFinding 
+                key={finding.id} 
+                finding={finding}
+                url={url}
+                onTryLiveDemo={handleTryLiveDemo}
+              />
             ))}
           </div>
         </div>
