@@ -121,6 +121,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    min-height: 100vh;
+  }
   body {
     @apply bg-background text-foreground;
     background-image: 
@@ -146,5 +150,35 @@
   
   ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.35 0.02 260);
+  }
+}
+
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
+.animate-spotlight {
+  animation: spotlight 2s ease 0.5s 1 forwards;
+}
+
+.loader {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid color-mix(in oklab, var(--muted-foreground) 25%, transparent);
+  border-top-color: var(--foreground);
+  border-radius: 9999px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

@@ -137,16 +137,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="w-screen min-h-screen bg-background overflow-x-hidden">
       <Header />
-      <main className="flex flex-col items-center px-4 py-8">
+      <main className="flex min-h-screen w-full flex-col py-8">
         {/* Tabs Navigation */}
-        <div className="w-full max-w-4xl">
+        <div className="w-full px-4 md:px-8 lg:px-12">
           <TabsNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
 
         {/* Tab Content */}
-        <div className="w-full max-w-4xl mt-8">
+        <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
           {/* Analyze Website Tab */}
           {activeTab === 'website' && (
             <>
@@ -174,7 +174,7 @@ export default function Home() {
 
           {/* Live Hacking Demo Tab */}
           {activeTab === 'live-demo' && (
-            <div className="flex flex-col items-center w-full">
+            <div className="flex w-full flex-col">
               <LiveUrlDemo 
                 url={liveDemoUrl} 
                 findings={liveDemoFindings}
@@ -193,14 +193,14 @@ export default function Home() {
 
           {/* Interactive Demo Tab */}
           {activeTab === 'interactive' && (
-            <div className="flex flex-col items-center">
+            <div className="flex w-full flex-col">
               <InteractiveDemo />
             </div>
           )}
 
           {/* Compare Sites Tab */}
           {activeTab === 'compare' && (
-            <div className="flex flex-col items-center">
+            <div className="flex w-full flex-col">
               {!compareResult ? (
                 <CompareSites onCompare={handleCompareSites} loading={loading} />
               ) : compareResult.error ? (
@@ -232,7 +232,7 @@ export default function Home() {
 
           {/* Upload HTML Tab */}
           {activeTab === 'html' && (
-            <div className="flex flex-col items-center">
+            <div className="flex w-full flex-col">
               {!htmlResult ? (
                 <HtmlUpload onAnalyze={handleAnalyzeHtml} disabled={loading} />
               ) : (
@@ -251,7 +251,7 @@ export default function Home() {
 
           {/* Quiz Tab */}
           {activeTab === 'quiz' && (
-            <div className="flex flex-col items-center">
+            <div className="flex w-full flex-col">
               <div className="w-full bg-background/50 border border-border rounded-lg p-6 mb-6">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Hack or Safe?</h2>
                 <p className="text-muted-foreground">
