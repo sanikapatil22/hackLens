@@ -210,6 +210,41 @@ Body: { "html": "<html>...", "fileName": "file.html" }
 Returns: { findings: [...], overallRiskScore: 35 }
 ```
 
+### Scenario Generation
+```
+POST /api/scenario
+Body: { mode?: "demo"|"live", adaptive?: boolean, params?: { type?, difficulty?, context? } }
+Returns: { scenario: {...} } or fallback payload
+```
+
+### Simulation
+```
+POST /api/simulate-attack
+Body: simulation input payload
+Returns: simulation evaluation + progression state
+```
+
+### User Tracking
+```
+GET  /api/user         -> user stats (auth required)
+POST /api/user         -> log interaction (auth or guest fallback)
+GET  /api/analytics    -> analytics summary (auth required)
+```
+
+## Environment Quick Keys
+
+```
+OPENAI_API_KEY=...
+DATABASE_URL=...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...
+LOG_LEVEL=info|warn|error
+```
+
+Notes:
+- `LOG_LEVEL` defaults to `info`.
+- Logger output is suppressed in tests (`NODE_ENV=test`).
+
 ## Finding Structure
 
 ### Every Finding Has

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SecurityFinding as SecurityFindingType } from '@/types/security';
 import { SecurityFinding } from './security-finding';
 import { LiveUrlDemo } from './live-url-demo';
 import { Card } from '@/components/ui/card';
-import { X } from 'lucide-react';
+import { buildSecurityExplanation, type SecurityExplainer } from './security-explainer';
 
 interface AnalysisResultProps {
   result: any;
@@ -34,6 +34,7 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showLiveDemo, setShowLiveDemo] = useState(false);
   const [selectedFinding, setSelectedFinding] = useState<string | null>(null);
+  const [explanationsById, setExplanationsById] = useState<Record<string, SecurityExplainer>>({});
 
   const handleTryLiveDemo = (findingId: string, _url: string) => {
     setSelectedFinding(findingId);
@@ -58,9 +59,38 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
 
   const findings: SecurityFindingType[] = result.findings || [];
   const riskScore = result.overallRiskScore || 0;
+  const explainerMode = 'ai' as const;
   const filteredFindings = selectedCategory
     ? findings.filter((f) => f.category === selectedCategory)
     : findings;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadExplanations() {
+      if (findings.length === 0) {
+        setExplanationsById({});
+        return;
+      }
+
+      const entries = await Promise.all(
+        findings.map(async (finding) => {
+          const explanation = await buildSecurityExplanation(finding, explainerMode);
+          return [finding.id, explanation] as const;
+        })
+      );
+
+      if (!cancelled) {
+        setExplanationsById(Object.fromEntries(entries));
+      }
+    }
+
+    void loadExplanations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [findings]);
 
   const getRiskColor = (score: number) => {
     if (score >= 75) return 'text-destructive';
@@ -206,6 +236,7 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
               <SecurityFinding 
                 key={finding.id} 
                 finding={finding}
+                explanation={explanationsById[finding.id]}
                 url={url}
                 onTryLiveDemo={handleTryLiveDemo}
               />

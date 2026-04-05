@@ -1,4 +1,4 @@
-# 🎯 HackerBuddy - Advanced Security Learning Platform
+# 🎯 HackLens - Advanced Security Learning Platform
 
 A playful, educational web application that analyzes websites for security, performance, compliance, SEO, and accessibility issues. Learn from a "friendly hacker's" perspective in simple, non-scary terms!
 
@@ -23,6 +23,14 @@ A playful, educational web application that analyzes websites for security, perf
 - **📈 Attack Timeline** - Step-by-step visualization of exploitation process
 - **📊 Before vs After** - Visualize impact of implementing security fixes
 - **💻 Code Examples** - Vulnerable vs secure code side-by-side comparison
+
+### Backend & AI Engine Features
+- **🤖 Hybrid Scenario Generation** - LLM-backed scenario generation with cache fallback
+- **🔁 Stateful Simulation Loop** - Multi-step simulation progression with attacker reactions
+- **🧠 Adaptive Difficulty** - Learner-aware scenario selection and difficulty tuning
+- **🗄 PostgreSQL + Guest Mode** - Authenticated persistence plus local fallback for guests
+- **🧱 Service Layer Architecture** - API routes delegate to focused backend services
+- **🪵 Structured Logging** - Environment-aware logging with configurable log levels
 
 ### Educational Features
 - **🧠 Hacker Confidence Meter** - Shows exploit difficulty, common attack vectors, success rates
@@ -52,6 +60,32 @@ pnpm install
 # Run development server
 pnpm dev
 ```
+
+### Database Setup (Optional, Recommended)
+
+The app supports hybrid user tracking:
+- Database-first with PostgreSQL when `DATABASE_URL` is configured.
+- Automatic local fallback on the client when database access fails.
+
+1. Copy environment values from `.env.example` into `.env.local`.
+2. Set `DATABASE_URL` to your PostgreSQL connection string.
+3. Initialize tables and indexes:
+
+```bash
+pnpm db:init
+```
+
+If PostgreSQL is unavailable, the simulation experience still works using client-side storage fallback.
+
+### Logging Configuration
+
+`LOG_LEVEL` controls backend logging verbosity:
+
+- `info` (default)
+- `warn`
+- `error`
+
+When `NODE_ENV=test`, backend logger output is suppressed for clean test runs.
 
 Open [http://localhost:3000](http://localhost:3000) to start learning!
 
@@ -123,8 +157,13 @@ app/
 ├── layout.tsx                # Root layout with dark theme
 ├── globals.css               # Tailwind & design tokens
 └── api/
-    ├── analyze/route.ts      # Website security analysis
-    └── analyze-html/route.ts # HTML file analysis
+    ├── analyze/route.ts        # Website security analysis
+    ├── analyze-html/route.ts   # HTML file analysis
+    ├── analysis/route.ts       # Analysis service entry route
+    ├── scenario/route.ts       # Scenario generation endpoint
+    ├── simulate-attack/route.ts# Simulation endpoint
+    ├── analytics/route.ts      # User analytics endpoint
+    └── user/route.ts           # User interaction + stats endpoint
 
 components/
 ├── analysis-form.tsx              # URL input form
@@ -151,7 +190,25 @@ types/
 └── security.ts               # TypeScript interfaces & types
 
 lib/
-└── quiz-questions.ts         # Gamified quiz questions
+├── ai/
+│   ├── scenario-engine.ts      # Scenario orchestration (live + fallback)
+│   ├── adaptive-engine.ts      # Difficulty adaptation engine
+│   ├── user-tracking.ts        # Learning profile tracking
+│   └── simulation-engine.ts    # Stateful simulation step engine
+├── server/
+│   ├── llm-client.ts           # Shared LLM client + schema-safe parsing
+│   ├── logger.ts               # Structured logger with log-level filter
+│   ├── rate-limiter.ts         # Rate-limiting helpers
+│   ├── cache.ts                # In-memory cache helpers
+│   └── db.ts                   # PostgreSQL query helper
+├── services/
+│   ├── analysis-service.ts     # Analysis business logic
+│   ├── scenario-service.ts     # Scenario business logic
+│   └── user-service.ts         # User and stats business logic
+├── validation/
+│   ├── analysis-schema.ts      # Analysis payload validation
+│   └── scenario-schema.ts      # Scenario payload validation
+└── quiz-questions.ts           # Gamified quiz questions
 
 .env.example                  # Environment template
 FEATURES.md                   # Detailed feature documentation
@@ -172,6 +229,8 @@ FEATURES.md                   # Detailed feature documentation
 - **UI Components**: shadcn/ui (buttons, cards, inputs, etc.)
 - **Icons**: Lucide React
 - **Architecture**: Component-based with API routes
+- **Backend Pattern**: Route + service + validation layering
+- **Testing**: Vitest route/service/AI coverage
 - **Deployment**: Optimized for Vercel, works anywhere with Node.js
 
 ## 📚 Learning Resources
@@ -186,7 +245,7 @@ For deeper learning:
 
 See [FEATURES.md](./FEATURES.md) for complete documentation of all interactive features.
 
-## 💡 Tips for Using HackerBuddy
+## 💡 Tips for Using HackLens
 
 1. **Test your own sites** - Use this to learn about your own security posture
 2. **Read the explanations** - Understanding the "why" is more important than the findings

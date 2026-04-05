@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logApi } from '@/lib/server/logger';
 
 interface AttackSimulation {
   vulnerabilityId: string;
@@ -340,7 +341,9 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Simulation error:', error);
+    logApi('/api/simulate-attack', 'error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return NextResponse.json(
       { error: 'Failed to generate attack simulation' },
       { status: 500 }

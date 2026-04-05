@@ -1,5 +1,36 @@
 # HackerBuddy Changelog
 
+## April 2026 - Backend AI Simulation & Observability Update
+
+### Backend additions
+- Added stateful simulation loop engine at `lib/ai/simulation-engine.ts` with `runSimulationStep(state, action, context)`.
+- Added attacker progression and system-state termination support (`secured`, `fully_compromised`, `exfiltration`).
+- Added adaptive scoring updates for simulation outcomes with bounded score handling.
+
+### API/service architecture updates
+- Added service-layer routes and handlers for analysis, scenario generation, analytics, and user tracking.
+- Added backend service modules for analysis, scenario orchestration, and user/stat operations.
+- Added schema validation modules for analysis and scenario payloads.
+
+### Logging and runtime hygiene
+- Introduced structured logger module with helper methods for API/service/AI events.
+- Added environment-driven log level control via `LOG_LEVEL` (`info`, `warn`, `error`).
+- Suppressed logger output during tests to reduce noise and improve test readability.
+- Added coverage ignore rules to keep generated artifacts out of version control.
+
+### Test coverage expansion
+- Added dedicated Vitest suites for:
+   - LLM client behavior and fallback paths
+   - Adaptive engine logic
+   - User tracking behavior
+   - Service-layer logic
+   - API route behavior
+- Test suite remains green after backend changes.
+
+### Documentation updates
+- README now includes backend architecture, simulation engine, logging controls, and updated project structure.
+- Quick reference updated with backend API and environment configuration notes.
+
 ## Latest Update - Multi-Category Analysis & Comparison Features
 
 ### New Components Added
