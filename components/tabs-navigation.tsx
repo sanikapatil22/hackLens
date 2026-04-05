@@ -1,18 +1,19 @@
 'use client';
 
-import { Globe, Zap as ZapIcon, Play, ShieldAlert } from 'lucide-react';
+import { Globe, Zap as ZapIcon, Play, ShieldAlert, type LucideIcon } from 'lucide-react';
 
 interface Tab {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  routeId: string;
+  icon: LucideIcon;
 }
 
 const TABS: Tab[] = [
-  { id: 'website', label: 'Analyze Website', icon: <Globe className="w-4 h-4" /> },
-  { id: 'live-demo', label: 'Live Hacking Demo', icon: <Play className="w-4 h-4" /> },
-  { id: 'interactive', label: 'Try Attack', icon: <ZapIcon className="w-4 h-4" /> },
-  { id: 'simulate', label: 'Simulate Attack', icon: <ShieldAlert className="w-4 h-4" /> },
+  { id: 'analyze', label: 'Analyze Website', routeId: 'website', icon: Globe },
+  { id: 'live', label: 'Live Hacking Demo', routeId: 'live-demo', icon: Play },
+  { id: 'try', label: 'Try Attack', routeId: 'interactive', icon: ZapIcon },
+  { id: 'simulate', label: 'Simulate Attack', routeId: 'simulate', icon: ShieldAlert },
 ];
 
 interface TabsNavigationProps {
@@ -26,16 +27,16 @@ export function TabsNavigation({ activeTab, onTabChange }: TabsNavigationProps) 
       {TABS.map((tab) => (
         <button
           key={tab.id}
-          onClick={() => onTabChange(tab.id)}
+          onClick={() => onTabChange(tab.routeId)}
           className={`flex items-center gap-2 px-4 py-3 rounded-none whitespace-nowrap transition-all font-medium text-sm font-mono relative group ${
-            activeTab === tab.id
+            activeTab === tab.routeId
               ? 'text-primary border-b-2 border-primary'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          {tab.icon}
+          <tab.icon className="w-4 h-4" />
           <span>{tab.label}</span>
-          {activeTab === tab.id && (
+          {activeTab === tab.routeId && (
             <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary via-accent to-primary"></div>
           )}
         </button>
