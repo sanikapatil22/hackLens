@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,17 @@ type PersonalizationStats = {
   weakAreas: string[];
 };
 
+type UserApiPayload = {
+  success?: boolean;
+  fallback?: boolean;
+  source?: string;
+  stats?: {
+    accuracy: number;
+    totalAttempts: number;
+    weakAreas: string[];
+  } | null;
+};
+
 export default function SimulateAttack() {
   const { user, isLoaded, isSignedIn } = useUser();
   const isGuest = !user;
@@ -42,64 +53,68 @@ export default function SimulateAttack() {
   const [upgradePromptDismissed, setUpgradePromptDismissed] = useState(false);
   const [sessionStats, setSessionStats] = useState<PersonalizationStats | null>(null);
 
-  useEffect(() => {
+  const getOrCreateLocalUserId = useCallback((): string => {
     const existingUserId = window.localStorage.getItem('hacklens_user_id');
-    if (!existingUserId) {
-      window.localStorage.setItem('hacklens_user_id', crypto.randomUUID());
+    if (existingUserId) {
+      return existingUserId;
     }
+
+    const generated = crypto.randomUUID();
+    window.localStorage.setItem('hacklens_user_id', generated);
+    return generated;
+  }, []);
+
+  const applyLocalFallbackStats = useCallback(() => {
+    const fallbackStats = getUserStats();
+    setSessionStats({
+      accuracy: fallbackStats.accuracy,
+      totalAttempts: fallbackStats.totalAttempts,
+      weakAreas: fallbackStats.weakAreas,
+    });
+  }, []);
+
+  const loadSessionStats = useCallback(async () => {
+    if (!isLoaded) {
+      return;
+    }
+
+    try {
+      const localUserId = getOrCreateLocalUserId();
+      const endpoint = `/api/user?userId=${encodeURIComponent(localUserId)}`;
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error('stats-unavailable');
+      }
+
+      const payload = (await response.json()) as UserApiPayload;
+      if (payload.stats) {
+        setSessionStats({
+          accuracy: payload.stats.accuracy,
+          totalAttempts: payload.stats.totalAttempts,
+          weakAreas: payload.stats.weakAreas ?? [],
+        });
+        return;
+      }
+
+      throw new Error('no-stats');
+    } catch {
+      applyLocalFallbackStats();
+    }
+  }, [applyLocalFallbackStats, getOrCreateLocalUserId, isLoaded]);
+
+  useEffect(() => {
+    getOrCreateLocalUserId();
 
     const existingCount = Number(window.localStorage.getItem(SIMULATION_COUNT_KEY) ?? '0');
     setSimulationCount(Number.isFinite(existingCount) ? existingCount : 0);
 
     const dismissed = window.localStorage.getItem(UPGRADE_PROMPT_DISMISSED_KEY) === 'true';
     setUpgradePromptDismissed(dismissed);
-  }, []);
+  }, [getOrCreateLocalUserId]);
 
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    const localUserId = typeof window !== 'undefined' ? window.localStorage.getItem('hacklens_user_id') : null;
-    const endpoint = localUserId
-      ? `/api/user?userId=${encodeURIComponent(localUserId)}`
-      : '/api/user';
-
-    fetch(endpoint)
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error('stats-unavailable');
-        }
-
-        const payload = await response.json() as {
-          success?: boolean;
-          stats?: {
-            accuracy: number;
-            totalAttempts: number;
-            weakAreas: string[];
-          } | null;
-        };
-
-        if (payload.stats) {
-          setSessionStats({
-            accuracy: payload.stats.accuracy,
-            totalAttempts: payload.stats.totalAttempts,
-            weakAreas: payload.stats.weakAreas ?? [],
-          });
-          return;
-        }
-
-        throw new Error('no-stats');
-      })
-      .catch(() => {
-        const fallbackStats = getUserStats();
-        setSessionStats({
-          accuracy: fallbackStats.accuracy,
-          totalAttempts: fallbackStats.totalAttempts,
-          weakAreas: fallbackStats.weakAreas,
-        });
-      });
-  }, [isLoaded, isSignedIn]);
+    void loadSessionStats();
+  }, [isSignedIn, loadSessionStats]);
 
   useEffect(() => {
     if (!isGuest && upgradePromptDismissed) {
@@ -146,7 +161,7 @@ export default function SimulateAttack() {
     }
   }
 
-  function handleAction(option: string) {
+  async function handleAction(option: string) {
     setUserAction(option);
     setShowResult(true);
 
@@ -170,30 +185,34 @@ export default function SimulateAttack() {
       window.localStorage.setItem(SIMULATION_COUNT_KEY, String(nextCount));
     }
 
-    const userId = typeof window !== 'undefined' ? window.localStorage.getItem('hacklens_user_id') : null;
+    const userId = getOrCreateLocalUserId();
 
-    if (!userId) {
+    try {
+      const response = await fetch('/api/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          ...interaction,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('user-api-failed');
+      }
+
+      const payload = (await response.json()) as UserApiPayload;
+      if (payload.fallback === true || payload.source !== 'db') {
+        logInteraction(interaction);
+        applyLocalFallbackStats();
+        return;
+      }
+
+      await loadSessionStats();
+    } catch {
       logInteraction(interaction);
-      return;
+      applyLocalFallbackStats();
     }
-
-    fetch('/api/user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        ...interaction,
-      }),
-    }).catch(() => {
-      logInteraction(interaction);
-    });
-
-    const localStats = getUserStats();
-    setSessionStats({
-      accuracy: localStats.accuracy,
-      totalAttempts: localStats.totalAttempts,
-      weakAreas: localStats.weakAreas,
-    });
   }
 
   const greetingText = isGuest

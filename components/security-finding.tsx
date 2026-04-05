@@ -10,9 +10,11 @@ import { TryAttackSandbox } from './try-attack-sandbox';
 import { Card } from '@/components/ui/card';
 import { ChevronDown, Zap } from 'lucide-react';
 import { useState } from 'react';
+import type { SecurityExplainer } from './security-explainer';
 
 interface SecurityFindingProps {
   finding: SecurityFindingType;
+  explanation?: SecurityExplainer;
   url?: string;
   onTryLiveDemo?: (findingId: string, url: string) => void;
 }
@@ -24,9 +26,35 @@ const severityConfig = {
   low: { bg: 'bg-blue-900/20', text: 'text-blue-400', label: 'Low Risk' },
 };
 
-export function SecurityFinding({ finding, url, onTryLiveDemo }: SecurityFindingProps) {
+function getSeverityMessage(severity: SecurityFindingType['severity']): string {
+  if (severity === 'critical' || severity === 'high') {
+    return '🔴 High risk — immediate action required';
+  }
+
+  if (severity === 'medium') {
+    return '🟡 Moderate risk — should be addressed';
+  }
+
+  return '🟢 Low risk — best practice improvement';
+}
+
+function getFixPriority(finding: SecurityFindingType): 'High' | 'Medium' | 'Low' {
+  if (finding.severity === 'critical' || finding.severity === 'high') {
+    return 'High';
+  }
+
+  if (finding.severity === 'medium') {
+    return 'Medium';
+  }
+
+  return 'Low';
+}
+
+export function SecurityFinding({ finding, explanation, url, onTryLiveDemo }: SecurityFindingProps) {
   const [expanded, setExpanded] = useState(false);
   const config = severityConfig[finding.severity];
+  const severityMessage = getSeverityMessage(finding.severity);
+  const fixPriority = getFixPriority(finding);
 
   return (
     <Card className="bg-card border border-border overflow-hidden">
@@ -74,6 +102,70 @@ export function SecurityFinding({ finding, url, onTryLiveDemo }: SecurityFinding
               <p className="text-muted-foreground text-sm">{finding.fix}</p>
             </div>
           </div>
+
+          {explanation && (
+            <div className="rounded-lg border border-border/60 bg-background/40 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="font-semibold text-foreground">Security Explainer</h4>
+                {explanation.confidence && (
+                  <span className="rounded-full border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs font-medium text-foreground">
+                    🤖 AI Confidence: {explanation.confidence}
+                  </span>
+                )}
+              </div>
+
+              <div className="rounded-md border border-border/50 bg-secondary/20 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">{severityMessage}</p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">🧠 AI Insight</p>
+                <p className="mt-1 text-sm text-muted-foreground">{explanation.insight}</p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-destructive">⚠️ Risk</p>
+                <p className="mt-1 text-sm text-muted-foreground">{explanation.risk}</p>
+              </div>
+
+              {explanation.attack_scenario && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">🎯 Attack Scenario</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{explanation.attack_scenario}</p>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-accent">🛠 Fix</p>
+                <p className="mt-1 text-sm text-muted-foreground">{explanation.fix}</p>
+              </div>
+
+              <div className="rounded-md border border-border/50 bg-secondary/20 px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">⏱ Fix Priority</p>
+                <p className="mt-1 text-sm font-medium text-foreground">{fixPriority}</p>
+              </div>
+
+              {explanation.fix_effort && (
+                <div className="rounded-md border border-border/50 bg-secondary/20 px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🛠 Fix Effort</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{explanation.fix_effort}</p>
+                </div>
+              )}
+
+              {explanation.impact && (
+                <div className="grid gap-2 md:grid-cols-2">
+                  <div className="rounded-md border border-red-500/30 bg-red-900/10 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-300">📉 Before Fix</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{explanation.impact.before}</p>
+                  </div>
+                  <div className="rounded-md border border-emerald-500/30 bg-emerald-900/10 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">📈 After Fix</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{explanation.impact.after}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Try Live Demo Button */}
           {url && onTryLiveDemo && (

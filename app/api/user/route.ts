@@ -98,19 +98,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const { userId: clerkId } = await auth();
+    const anonymousUserId = request.nextUrl.searchParams.get('userId');
+    const effectiveUserId = clerkId
+      ? await ensureUserExists(clerkId)
+      : anonymousUserId;
+    const authMode = clerkId ? 'clerk' : 'anonymous';
 
-    if (!clerkId) {
+    if (!effectiveUserId) {
       logApi('/api/user', 'error', { error: 'Unauthorized', method: 'GET' });
       return NextResponse.json(
         { success: false, fallback: false, source: 'server-error', error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    const effectiveUserId = await ensureUserExists(clerkId);
 
     try {
       const stats = await getUserStatsDB(effectiveUserId);
@@ -119,7 +122,7 @@ export async function GET(_request: NextRequest) {
         success: true,
         fallback: false,
         source: 'db',
-        authMode: 'clerk',
+        authMode,
         stats,
       });
     } catch (dbError) {
@@ -132,7 +135,7 @@ export async function GET(_request: NextRequest) {
         success: true,
         fallback: true,
         source: 'client',
-        authMode: 'clerk',
+        authMode,
         stats: null,
       });
     }

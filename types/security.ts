@@ -43,21 +43,6 @@ export interface InteractiveDemo {
   tips: string[];
 }
 
-export interface QuizQuestion {
-  id: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  scenario: string;
-  code?: string;
-  options: {
-    label: string;
-    value: 'safe' | 'vulnerable';
-    isCorrect: boolean;
-  }[];
-  explanation: string;
-  hackerTip: string;
-  pointsReward: number;
-}
-
 export interface SecurityFinding {
   id: string;
   type?: 'xss' | 'sqli' | 'misconfiguration';
@@ -97,35 +82,6 @@ export interface AnalysisResult {
   findings: SecurityFinding[];
   overallRiskScore: number; // 0-100
   summary: string;
-  htmlUploadAnalysis?: {
-    fileName: string;
-    findings: SecurityFinding[];
-  };
-}
-
-export interface QuizResults {
-  totalQuestions: number;
-  correctAnswers: number;
-  totalPoints: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  completedAt: string;
-}
-
-export interface SiteComparison {
-  site1: {
-    url: string;
-    riskScore: number;
-    criticalCount: number;
-    highCount: number;
-  };
-  site2: {
-    url: string;
-    riskScore: number;
-    criticalCount: number;
-    highCount: number;
-  };
-  isSite1Safer: boolean;
-  riskDifference: number;
 }
 
 export interface BeforeAfterComparison {
