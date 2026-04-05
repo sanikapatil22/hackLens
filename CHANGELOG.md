@@ -1,5 +1,45 @@
 # HackerBuddy Changelog
 
+## April 2026 - Intelligence Layer, Replay, and Reporting Expansion
+
+### Documentation refresh
+- Updated README, FEATURES, QUICK_REFERENCE, and implementation docs to match current product scope.
+- Removed references to retired features from docs (Compare Sites, Upload HTML, Quiz, Learn tab).
+
+### Analyze Website upgrades
+- Added explainer support for optional `fix_code` snippets.
+- Added backend prompt expansion for secure code-fix example generation.
+- Added cached deterministic `fix_code` fallbacks by vulnerability class.
+- Added report generation endpoint `/api/report` with AI mode and deterministic fallback.
+- Added report generation UI and print/export support in analysis view.
+
+### Live Hacking Demo upgrades
+- Added Branching Story Mode with per-stage defensive choices.
+- Added AI-generated choices through existing secure backend route.
+- Added deterministic cached choice generation by stage.
+- Added user-choice-driven narration and stage momentum adaptation.
+
+### Try Attack upgrades
+- Added strategy scoring module with AI mode and deterministic fallback.
+- Added strategy feedback UI (score + insights).
+- Added session replay timeline with autoplay and speed control.
+
+### Simulation upgrades
+- Added internal attacker memory (`previous_failures`, `preferred_style`) in simulation engine.
+- Added behavior adaptation rules (stealth/aggressive switching).
+- Added replay support in scenario result view and replay data capture in simulation flow.
+
+### User intelligence and guidance upgrades
+- Added user intelligence profile computation/persistence service.
+- Added additive schema columns for profile data in `user_stats`.
+- Added Global AI Summary and Guided Learning Path panel on top-level app view.
+
+### Backward-compatibility guarantees
+- No contract changes to existing API endpoints.
+- No response shape changes to existing endpoints.
+- Additive schema updates only.
+- Deterministic fallback paths preserved across all newly added AI capabilities.
+
 ## April 2026 - Backend AI Simulation & Observability Update
 
 ### Backend additions

@@ -1,386 +1,81 @@
-# HackerBuddy Quick Reference
+# HackLens Quick Reference
 
-## All Features at a Glance
+## Tabs
 
-### Main Tabs
-```
-🌍 Analyze Website  →  Scan single URL for all risks
-⚖️ Compare Sites    →  Compare two URLs side-by-side  [NEW]
-📁 Upload HTML      →  Analyze local .html files
-⚡ Hack or Safe     →  Gamified security quiz
-📚 Learn Security   →  Educational examples
-```
+- Analyze Website
+- Live Hacking Demo
+- Try Attack
+- Simulate Attack
 
-### Risk Categories
-```
-🔓 Security/Hacking     [Red]     - HTTPS, headers, exploits
-⚡ Performance          [Orange]  - Compression, speed
-📋 Compliance/Privacy   [Purple]  - GDPR, privacy policies
-🔎 SEO                  [Blue]    - Search optimization
-♿ Accessibility        [Cyan]    - WCAG compliance
-```
+## Key New Capabilities
 
-### Each Finding Shows
-```
-🔍 What I Noticed          →  Observable issue
-😈 How I'd Attack This     →  Exploitation method
-💥 What Could Happen       →  Potential impact
-🛠 How to Fix It           →  Solution steps
-```
+- Fix code generation in explainer cards.
+- Branching Story Mode in live demo.
+- Strategy scoring in Try Attack.
+- Memory-based attacker behavior in simulation engine.
+- Global AI Summary and Guided Learning Path panel.
+- Session replay in Try Attack and simulation result.
+- Security report generation with print/export.
 
-### Expandable Content
-```
-┌─ Code Examples           →  Vulnerable vs secure code
-├─ Attack Timeline         →  Step-by-step exploitation
-├─ Hacker Confidence       →  0-100% exploit difficulty
-├─ ELI5 Explanation        →  Simplified version
-├─ Before/After            →  Fix improvement visualization
-└─ Try Attack Sandbox      →  Safe payload testing
-```
+## AI + Cache Behavior
 
-## Quick Start
+- AI mode uses backend-only calls through API routes.
+- Cache mode uses deterministic fallback templates/rules.
+- No client-side secret key usage.
 
-### For Website Analysis
-```
-1. Enter URL
-2. Click Analyze
-3. View findings
-4. Filter by category (optional)
-5. Click finding to expand
-```
+## Routes
 
-### For Comparison
-```
-1. Enter URL 1
-2. Enter URL 2
-3. Click Compare
-4. View side-by-side results
-5. See winner badge
-```
+### Core
+- POST /api/analyze
+- POST /api/analysis
+- POST /api/scenario
+- POST /api/simulate-attack
+- GET,POST /api/user
+- GET /api/analytics
+- POST /api/explainer
 
-### For Learning
-```
-1. Go to Learn Security tab
-2. Browse examples
-3. Expand findings
-4. Study explanations
-5. Review code
-```
+### Additive
+- POST /api/report
 
-### For Assessment
-```
-1. Go to Hack or Safe tab
-2. Read scenario
-3. Choose SAFE or VULNERABLE
-4. Get instant feedback
-5. Earn points
-```
+## Analyze Website Workflow
 
-## Key Metrics Explained
+1. Analyze URL.
+2. Expand findings.
+3. Read insight/risk/fix and optional fix code.
+4. Generate report when needed.
+5. Print/export report if desired.
 
-### Overall Risk Score
-```
-0-25%   ✅ Good       - Minimal issues, good practices
-25-50%  ⚠️ Fair       - Some improvements suggested
-50-75%  ⚠️ Concerning - Multiple significant issues
-75-100% 🔴 Critical   - Urgent attention required
-```
+## Live Hacking Demo Workflow
 
-### Severity Levels
-```
-🔴 Critical   - Immediate exploitation possible
-🔴 High       - Serious vulnerability
-🟡 Medium     - Should be fixed soon
-🔵 Low        - Nice to fix
-```
+1. Open live demo.
+2. Observe stage and narration.
+3. Pick a defensive action from Branching Story Mode.
+4. Watch narration/stage adapt.
 
-### Hacker Confidence
-```
-Exploit Difficulty  →  0-100 (lower = easier)
-Attack Vector       →  Common or rare?
-User Interaction    →  Requires user click?
-Authentication      →  Requires login?
-Success Rate        →  0-100% (higher = likely)
-```
+## Try Attack Workflow
 
-## Color Reference
+1. Enter attack input.
+2. Review classification and coach hints.
+3. Read strategy score and insights.
+4. Use Replay Attack to step through timeline.
 
-### Risk Categories
-```
-🔴 Red       = Hacking/Security (Critical)
-🟠 Orange    = Performance
-🟣 Purple    = Compliance/Privacy
-🔵 Blue      = SEO
-🔷 Cyan      = Accessibility
-```
+## Simulate Attack Workflow
 
-### Severity
-```
-🔴 Red       = Critical/High severity
-🟡 Yellow    = Medium severity
-🔵 Blue      = Low severity
-🟢 Green     = Fixed/Safe
-```
+1. Generate scenario (manual/adaptive).
+2. Choose action.
+3. Review stateful result.
+4. Use Replay Attack for session playback.
 
-## Component Guide
+## Data and Profile
 
-### Analyze Results Page
-```
-┌──────────────────────────────────────────┐
-│  📊 ANALYSIS REPORT                      │
-│  Risk Score: 45% | Total: 12 findings   │
-│  Critical: 0 | High: 2 | Medium: 4      │
-├──────────────────────────────────────────┤
-│  [All] [🔓 Security] [⚡ Performance]   │
-│  [📋 Compliance] [🔎 SEO] [♿ Access]   │
-├──────────────────────────────────────────┤
-│  ▼ Finding 1 (High)                     │
-│  ▼ Finding 2 (Medium)                   │
-│  ▼ Finding 3 (Low)                      │
-└──────────────────────────────────────────┘
-```
+User profile signals are derived and reused across UI layers:
+- weak_areas
+- strengths
+- behavior_pattern
+- avg_score
 
-### Compare Results Page
-```
-┌──────────────────────────────────────────┐
-│  🏆 SECURITY CHAMPION: site1.com        │
-│  45% safer than site2.com               │
-├────────────────┬────────────────────────┤
-│ site1.com      │ site2.com             │
-│ Risk: 35%      │ Risk: 80%             │
-│ Critical: 0    │ Critical: 2           │
-│ High: 1        │ High: 5               │
-│ Medium: 2      │ Medium: 8             │
-│ Low: 1         │ Low: 3                │
-└────────────────┴────────────────────────┘
-```
+## Safety Notes
 
-### Expanded Finding
-```
-┌──────────────────────────────────────────┐
-│ 🔴 Missing HTTPS (High Risk)            │
-│ Security | Hacking                       │
-├──────────────────────────────────────────┤
-│ 🔍 What I Noticed                       │
-│ Your site uses HTTP...                   │
-├──────────────────────────────────────────┤
-│ 😈 How I'd Attack This                  │
-│ I'd intercept traffic...                 │
-├──────────────────────────────────────────┤
-│ 💥 What Could Happen                    │
-│ Attackers steal passwords...             │
-├──────────────────────────────────────────┤
-│ 🛠 How to Fix It                        │
-│ Get SSL certificate...                   │
-├──────────────────────────────────────────┤
-│ [▼] Code Examples  [▼] Attack Timeline  │
-│ [▼] Hacker Meter   [▼] ELI5 Explanation│
-│ [▼] Before/After   [▼] Try Sandbox     │
-└──────────────────────────────────────────┘
-```
-
-## Keyboard Shortcuts
-```
-Tab             → Navigate elements
-Enter/Space     → Toggle finding expansion
-Ctrl+F          → Find on page (browser)
-```
-
-## Mobile Tips
-```
-✓ Responsive design - Works on all devices
-✓ Touch-friendly - Tap to expand findings
-✓ Readable - Proper contrast and sizing
-✓ Fast - Optimized for mobile networks
-```
-
-## API Endpoints
-
-### Website Analysis
-```
-POST /api/analyze
-Body: { "url": "example.com" }
-Returns: { findings: [...], overallRiskScore: 45 }
-```
-
-### HTML Analysis
-```
-POST /api/analyze-html
-Body: { "html": "<html>...", "fileName": "file.html" }
-Returns: { findings: [...], overallRiskScore: 35 }
-```
-
-### Scenario Generation
-```
-POST /api/scenario
-Body: { mode?: "demo"|"live", adaptive?: boolean, params?: { type?, difficulty?, context? } }
-Returns: { scenario: {...} } or fallback payload
-```
-
-### Simulation
-```
-POST /api/simulate-attack
-Body: simulation input payload
-Returns: simulation evaluation + progression state
-```
-
-### User Tracking
-```
-GET  /api/user         -> user stats (auth required)
-POST /api/user         -> log interaction (auth or guest fallback)
-GET  /api/analytics    -> analytics summary (auth required)
-```
-
-## Environment Quick Keys
-
-```
-OPENAI_API_KEY=...
-DATABASE_URL=...
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
-CLERK_SECRET_KEY=...
-LOG_LEVEL=info|warn|error
-```
-
-Notes:
-- `LOG_LEVEL` defaults to `info`.
-- Logger output is suppressed in tests (`NODE_ENV=test`).
-
-## Finding Structure
-
-### Every Finding Has
-```
-{
-  id: string,                    // Unique identifier
-  title: string,                 // Issue title
-  category: string,              // hacking|performance|compliance|seo|accessibility
-  severity: string,              // critical|high|medium|low
-  observed: string,              // What was found
-  impact: string,                // What could happen
-  fix: string,                   // How to fix it
-  hackerPerspective?: string,   // Optional: how to exploit
-  
-  // Optional: Interactive features
-  eli5?: { simple, analogy, example },
-  codeExample?: { vulnerable, fixed, explanation },
-  attackTimeline?: [...],
-  hackerConfidence?: { ... },
-  interactiveDemo?: { ... },
-  beforeAfterComparison?: { ... }
-}
-```
-
-## Common Findings by Category
-
-### Security Findings
-- Missing HTTPS
-- Missing security headers
-- Server banner exposure
-- Vulnerable frameworks
-- Weak configuration
-
-### Performance Findings
-- Missing compression
-- Large unoptimized assets
-- Slow response times
-- Inefficient caching
-- Bandwidth waste
-
-### Compliance Findings
-- Missing privacy policy
-- GDPR violations
-- Missing terms of service
-- Cookie consent issues
-- Data retention problems
-
-### SEO Findings
-- Missing meta tags
-- Poor mobile optimization
-- Missing structured data
-- Slow page speed
-- Duplicate content
-
-### Accessibility Findings
-- Missing alt text
-- Poor color contrast
-- No keyboard navigation
-- Missing form labels
-- Poor heading structure
-
-## Best Practices
-
-### For Site Owners
-1. Analyze your site monthly
-2. Fix critical issues first
-3. Track improvements over time
-4. Compare against competitors
-5. Update security regularly
-
-### For Developers
-1. Study vulnerable code examples
-2. Review secure implementations
-3. Understand attack vectors
-4. Learn best practices
-5. Apply fixes to your code
-
-### For Learners
-1. Start with Easy quiz questions
-2. Read ELI5 explanations
-3. Study code examples
-4. Review attack timelines
-5. Graduate to Hard questions
-
-### For Educators
-1. Use Learn Security tab
-2. Have students take quiz
-3. Compare site examples
-4. Discuss vulnerabilities
-5. Assign real-world analysis
-
-## Troubleshooting
-
-### Site Won't Analyze
-- Check URL is public
-- Verify internet connection
-- Try different site
-- Ensure proper URL format
-
-### Quiz Not Scoring
-- Browser may be blocking storage
-- Try incognito mode
-- Refresh page loses scores
-- Take screenshots to save
-
-### HTML Upload Fails
-- File must be .html
-- Check file size (< 10MB)
-- Ensure valid HTML
-- Try simplified version
-
-## Support Resources
-
-- **README.md** - Project overview
-- **USER_GUIDE.md** - How to use features
-- **FEATURES.md** - Complete feature list
-- **IMPLEMENTATION_SUMMARY.md** - Technical details
-- **CHANGELOG.md** - What's new
-
-## Fun Facts
-
-- 5 risk categories analyzed
-- 10+ interactive features
-- 25+ React components
-- 500+ lines of API code
-- 1,200+ lines of docs
-- 100% educational focus
-- 0 tracking/analytics
-- 0 data storage
-
-## Version Info
-- **Current**: v2.0 (Multi-category)
-- **Framework**: Next.js 16
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-
----
-
-**Start exploring now! 🚀**
+- Simulations are educational and safe.
+- No real attacks are executed.
+- Existing endpoint contracts remain unchanged.

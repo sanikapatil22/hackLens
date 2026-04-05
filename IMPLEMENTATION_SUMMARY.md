@@ -1,367 +1,132 @@
-# HackerBuddy Implementation Summary
+# HackLens Implementation Summary
 
-## Backend Update (April 2026)
+## Current Scope
 
-The platform now includes production-grade backend enhancements in addition to the UI feature set:
+HackLens is an AI-assisted, educational security platform with four active product areas:
 
-- Added a stateful simulation loop engine in `lib/ai/simulation-engine.ts`.
-- Added service-layer backend modules:
-  - `lib/services/analysis-service.ts`
-  - `lib/services/scenario-service.ts`
-  - `lib/services/user-service.ts`
-- Added server infrastructure modules:
-  - structured logging (`lib/server/logger.ts`)
-  - shared LLM client (`lib/server/llm-client.ts`)
-  - rate limiting and cache utilities (`lib/server/rate-limiter.ts`, `lib/server/cache.ts`)
-  - PostgreSQL helper and schema bootstrap (`lib/server/db.ts`, `lib/server/sql/schema.sql`)
-- Added route coverage for backend APIs:
-  - `/api/analysis`, `/api/scenario`, `/api/simulate-attack`, `/api/user`, `/api/analytics`
-- Added schema validation modules in `lib/validation/`.
-- Expanded Vitest coverage across API routes, services, adaptive logic, LLM integration, and user tracking.
-- Added log-level environment control and test-time log suppression.
+1. Analyze Website
+2. Live Hacking Demo
+3. Try Attack
+4. Simulate Attack
 
-## What Was Built
+The implementation is additive and fallback-first, with deterministic behavior preserved when AI is unavailable.
 
-A complete, production-ready security learning platform with advanced features for analyzing websites across multiple risk categories.
+## Architecture Overview
 
-## New Features Added (Latest Update)
+### Frontend
+- Next.js App Router with client-first interactive modules.
+- Feature-specific components for analysis, simulation, sandbox coaching, and narration.
+- Top-level intelligence panel for summary and guided learning path.
 
-### 1. Compare Sites Feature
-- **Component**: `compare-sites.tsx` + `compare-results.tsx`
-- **Tab**: New "Compare Sites" tab in navigation
-- **Functionality**:
-  - Enter two URLs to compare security posture
-  - Side-by-side risk score comparison
-  - Visual winner badge (safer site)
-  - Severity breakdown by category
-  - Insights on key differences
-  - Risk difference percentage displayed
+### Backend
+- Route + service architecture.
+- Existing endpoints retained; additive endpoint introduced for report generation.
+- Secure AI routing through backend only (no frontend key exposure).
 
-### 2. Before vs After Comparison
-- **Components**: 
-  - `fix-before-after-showcase.tsx` - Code comparison view
-  - `before-after-metrics.tsx` - Improvement metrics
-  - `fix-improvement-tracker.tsx` - Impact tracking
-- **Features**:
-  - Vulnerable vs secure code side-by-side
-  - Shows specific improvements
-  - Percentage reduction badges
-  - Expandable detailed explanations
-  - Color-coded before/after indicators
+### Data
+- PostgreSQL for users, interactions, and user_stats.
+- Additive profile fields in user_stats:
+  - weak_areas (jsonb)
+  - strengths (jsonb)
+  - behavior_pattern (text)
+  - avg_score (float)
+- Database-first with client fallback when needed.
 
-### 3. Multi-Category Risk Analysis
-Instead of just hacking risks, now analyzes:
-- **Security/Hacking** (35% of findings)
-  - HTTPS protection
-  - Security headers
-  - Attack vectors
-  - Server information disclosure
+## Key Implemented Systems
 
-- **Performance** (20% of findings)
-  - Content compression (gzip)
-  - Page load optimization
-  - Bandwidth efficiency
-  - User experience impact
+### 1) Security Explainer + Fix Generator
 
-- **Compliance & Privacy** (20% of findings)
-  - GDPR compliance
-  - Privacy policies
-  - Data protection
-  - Cookie consent
-  - Legal implications
+- Optional `fix_code` included in explainer model.
+- AI generation via backend route with strict parse and fallback.
+- Deterministic fix-code templates for common vulnerability types.
+- UI rendering of fix code only when present.
 
-- **SEO & Discoverability** (15% of findings)
-  - Meta tags
-  - Structured data
-  - Mobile responsiveness
-  - Search optimization
-  - Traffic impact
+### 2) Branching Story Mode (Live Demo)
 
-- **Accessibility** (10% of findings)
-  - WCAG compliance
-  - Screen reader support
-  - Keyboard navigation
-  - Color contrast
-  - Inclusive design
+- Per-stage defensive choice model.
+- AI-driven choices through existing secure backend route.
+- Deterministic cached choices by stage.
+- User choice updates narration and attacker momentum in UI.
 
-### 4. Enhanced Results Interface
-- **Component**: Updated `analysis-result.tsx`
-- **Features**:
-  - Category filter buttons with counts
-  - Overall risk score with color coding
-  - Severity breakdown (Critical/High/Medium/Low)
-  - Filter findings by risk type
-  - Visual category badges with colors
-  - Shows filtered count indicator
+### 3) Strategy Scoring (Try Attack)
 
-### 5. Type System Extensions
-- **File**: `types/security.ts`
-- **New Interfaces**:
-  - `SiteComparison` - for comparing two sites
-  - `BeforeAfterComparison` - for fix improvements
-- **Enhanced**:
-  - `SecurityFinding` now includes `category` type
-  - `SecurityFinding` includes `riskType` field
-  - Optional `hackerPerspective` (not all risks are hacking-related)
+- Strategy scoring service with:
+  - AI mode (backend route usage)
+  - deterministic fallback rules
+- Signal extraction includes repeated mistakes, delayed correctness, investigation gaps, and missed root cause patterns.
+- UI shows score and insight bullets.
 
-### 6. API Enhancements
-- **File**: `app/api/analyze/route.ts`
-- **New Checks**:
-  - Missing content compression (performance risk)
-  - Accessibility compliance gaps
-  - Privacy & GDPR requirements
-  - SEO best practices
-  - Performance optimization opportunities
-- **Updated**:
-  - Returns `overallRiskScore` (0-100)
-  - Includes non-hacking findings
-  - Better risk categorization
+### 4) Memory-Based Attacker Simulation
 
-## Component Hierarchy
+- Internal attacker memory stored in simulation state:
+  - previous_failures
+  - preferred_style (stealth/aggressive)
+- Memory updated each step and influences attacker adaptation.
+- Prompt context includes memory and defense history.
 
-```
-Main App (page.tsx)
-├── Tabs Navigation (tabs-navigation.tsx)
-│   ├── Analyze Website
-│   ├── Compare Sites [NEW]
-│   ├── Upload HTML
-│   ├── Hack or Safe
-│   └── Learn Security
-├── Analyze Website Tab
-│   ├── Analysis Form
-│   └── Analysis Result [ENHANCED]
-│       ├── Category Filter [NEW]
-│       └── Security Findings
-│           ├── Basic Info (4-point format)
-│           ├── Code Fix Snippets
-│           ├── Before/After Comparison [NEW]
-│           ├── ELI5 Explanation
-│           ├── Hacker Confidence Meter
-│           ├── Attack Timeline
-│           └── Try Attack Sandbox
-├── Compare Sites Tab [NEW]
-│   ├── Compare Form
-│   └── Compare Results
-│       ├── Winner Badge
-│       ├── Risk Comparison Grid
-│       └── Insights
-├── HTML Upload Tab
-│   └── Analysis Result [ENHANCED with categories]
-├── Quiz Tab
-│   └── Hack or Safe Quiz
-└── Learn Tab
-    └── Pre-built Examples
-```
+### 5) Security Report Generator
 
-## File Structure
+- New additive endpoint: POST /api/report
+- Input: vulnerabilities, explanations, optional user profile.
+- Output: summary, vulnerabilities, recommendations.
+- AI mode and deterministic fallback mode.
+- Frontend supports report generation and print/export.
 
-### New Files Created
-```
-components/
-├── compare-sites.tsx              (120 lines)
-├── compare-results.tsx            (176 lines)
-├── before-after-metrics.tsx       (75 lines)
-├── fix-improvement-tracker.tsx    (74 lines)
-├── fix-before-after-showcase.tsx  (96 lines)
+### 6) Global Intelligence Layer
 
-types/
-└── security.ts                    (139 lines - extended)
+- User profile synthesis from interactions.
+- Global AI Summary service with deterministic fallback template.
+- Guided Learning Path service returning 3 next steps with fallback rules.
+- Displayed in compact top-level intelligence panel.
 
-FEATURES.md                         (183 lines)
-IMPLEMENTATION_SUMMARY.md           (this file)
-```
+### 7) Session Replay System
 
-### Modified Files
-```
-app/
-├── page.tsx                       (main app with compare tab)
-└── api/
-    └── analyze/route.ts           (adds non-hacking risks)
+- Shared replay timeline helper.
+- Try Attack replay with auto-play + speed controls.
+- Simulate Attack replay from captured session history.
+- Replay is stored-data based (no AI required for playback).
 
-components/
-├── tabs-navigation.tsx            (added Compare Sites tab)
-├── analysis-result.tsx            (category filtering)
-└── security-finding.tsx           (no changes needed)
+## Reliability and Safety Patterns
 
-README.md                          (updated documentation)
-```
+- All AI features have deterministic fallback behavior.
+- Existing endpoint contracts remain stable.
+- Existing response structures remain stable.
+- Additive changes only; no core-service removals.
+- Educational simulation messaging preserved.
 
-## Key Features by Category
+## Main Files Added/Extended
 
-### Security/Hacking Analysis
-- HTTPS/SSL status
-- Security header validation
-- Server information leaks
-- Attack confidence scoring
-- Vulnerability timelines
-- Interactive exploit testing
+### New services
+- lib/services/user-intelligence.ts
+- lib/services/strategy-scoring.ts
+- lib/services/ai-summary.ts
+- lib/services/learning-path.ts
+- lib/services/replay-timeline.ts
 
-### Performance Analysis
-- Content compression detection
-- Bandwidth optimization
-- Page load efficiency
-- User experience impact
-- Load time implications
+### New route
+- app/api/report/route.ts
 
-### Compliance Analysis
-- GDPR requirements
-- Privacy policy presence
-- Data protection measures
-- Legal risk assessment
-- Cookie consent needs
+### Extended routes/components
+- app/api/explainer/route.ts
+- components/security-explainer.ts
+- components/security-finding.tsx
+- components/analysis-result.tsx
+- components/visual-vulnerability-simulator.tsx
+- components/try-attack-sandbox.tsx
+- components/ai-simulation/simulate-attack.tsx
+- components/ai-simulation/scenario-result.tsx
+- components/global-intelligence-panel.tsx
+- app/page.tsx
+- lib/ai/simulation-engine.ts
+- lib/services/user-service.ts
+- lib/server/sql/schema.sql
 
-### SEO Analysis
-- Meta tags and descriptions
-- Structured data (Schema.org)
-- Mobile responsiveness
-- Search optimization
-- Traffic impact estimation
+## Outcome
 
-### Accessibility Analysis
-- WCAG compliance
-- Screen reader support
-- Keyboard navigation
-- Color contrast validation
-- Inclusive design practices
+HackLens now delivers a connected intelligence experience across analysis, sandbox practice, and simulation:
 
-## User Workflows
-
-### Analyze Single Website
-1. Enter URL in "Analyze Website" tab
-2. View all findings (hacking, performance, compliance, SEO, accessibility)
-3. Filter by category to focus on specific risks
-4. Click findings to see:
-   - Code examples
-   - Attack timelines
-   - Confidence scores
-   - Before/after improvements
-
-### Compare Two Websites
-1. Enter two URLs in "Compare Sites" tab
-2. See side-by-side risk comparison
-3. View severity breakdown
-4. Identify which site is safer
-5. Click to drill into specific findings
-
-### Learn About Fixes
-1. View before/after code comparison
-2. See improvement metrics
-3. Understand impact of changes
-4. Learn best practices
-
-### Test Your Knowledge
-1. Take "Hack or Safe?" quiz
-2. Identify vulnerable code
-3. Earn points for correct answers
-4. Learn from detailed explanations
-
-## Design Decisions
-
-### Color Coding by Risk Type
-- **Red** (Hacking/Security) - Most critical
-- **Orange** (Performance) - User impact
-- **Purple** (Compliance) - Legal implications
-- **Blue** (SEO) - Business impact
-- **Cyan** (Accessibility) - Inclusive design
-
-### Category Strategy
-- Moved beyond just "security" to holistic analysis
-- Each category has equal importance
-- Filtering allows focus on specific concerns
-- All findings use consistent 4-point format
-
-### Comparison Feature
-- Benchmarking capability
-- Side-by-side visual comparison
-- Clear winner indication
-- Educational insights
-
-### Before/After Display
-- Motivates users to implement fixes
-- Shows concrete improvements
-- Uses visual indicators
-- Makes impact clear
-
-## API Changes
-
-The `/api/analyze` endpoint now returns:
-```json
-{
-  "findings": [
-    {
-      "id": "unique-id",
-      "category": "hacking|performance|compliance|seo|accessibility",
-      "riskType": "specific risk name",
-      "severity": "critical|high|medium|low",
-      "title": "Finding Title",
-      "observed": "What was found",
-      "hackerPerspective": "optional - how to exploit",
-      "impact": "What could happen",
-      "fix": "How to fix it",
-      "eli5": { "simple": "...", "analogy": "...", "example": "..." },
-      "attackTimeline": [...],
-      "hackerConfidence": { ... },
-      "codeExample": { ... },
-      "beforeAfterComparison": { ... }
-    }
-  ],
-  "overallRiskScore": 45,
-  "summary": "Found X security considerations"
-}
-```
-
-## Testing Recommendations
-
-### Manual Testing
-1. Test website analysis with different URLs
-2. Test comparison with two different sites
-3. Filter results by each category
-4. Expand findings to verify all features display
-5. Test quiz functionality
-6. Test HTML upload with sample files
-
-### Edge Cases
-- Invalid URLs
-- Unreachable sites
-- Very long URLs
-- Sites with many/few findings
-- Different risk category distributions
-
-## Performance Considerations
-
-- Parallel API calls for comparison feature
-- Lazy-loaded components
-- Efficient filtering (client-side)
-- No database dependencies
-- Stateless analysis
-
-## Deployment Notes
-
-- Ready for Vercel deployment
-- No environment variables required
-- Works with any Node.js host
-- Responsive design for mobile
-- Full dark mode support
-
-## Future Enhancement Ideas
-
-1. **Export Reports** - Generate PDF/JSON reports
-2. **Historical Tracking** - Track site improvements over time
-3. **Team Collaboration** - Share findings with team members
-4. **Advanced Filtering** - More granular filtering options
-5. **Custom Thresholds** - User-defined risk thresholds
-6. **Automation** - Scheduled scanning
-7. **Detailed Audit Trail** - Full assessment history
-8. **API Integration** - Webhooks for CI/CD integration
-
-## Summary
-
-HackerBuddy has evolved from a basic security analyzer to a comprehensive learning platform covering:
-- 5 risk categories (not just hacking)
-- Site comparison capabilities
-- Before/after improvement visualization
-- 10+ interactive learning features
-- Professional-grade analysis interface
-- Educational focus with gamification
-
-The platform serves learners, developers, and security professionals who want to understand website risks holistically.
+- Personalized focus and recommendations.
+- Adaptive and memory-aware simulation behavior.
+- Replayable learning sessions.
+- Report-ready analysis artifacts.
+- AI enhancement with robust deterministic fallback.

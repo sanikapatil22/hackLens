@@ -1,182 +1,123 @@
-# HackerBuddy - Advanced Security Learning Platform
+# HackLens Feature Matrix
 
-## Complete Feature Set
+## Active Tabs
 
-### Core Analysis Features
+1. Analyze Website
+2. Live Hacking Demo
+3. Try Attack
+4. Simulate Attack
 
-#### 1. Website Analysis
-- Analyzes live websites for security vulnerabilities
-- Checks HTTPS, security headers, server information
-- Generates risk scores and severity ratings
-- Includes attack timelines and hacker confidence metrics
+## Analyze Website
 
-#### 2. Compare Sites
-- **NEW**: Compare two websites side-by-side
-- Risk score comparison with visual winner badge
-- Issue count breakdown by severity
-- Shows which site is safer and by how much
-- Perfect for benchmarking security practices
+### Core
+- URL-based analysis with risk findings.
+- Severity and category breakdown.
+- Expandable finding cards with educational context.
 
-#### 3. HTML File Upload
-- Upload local HTML files for analysis
-- Checks for inline scripts, event handlers
-- Detects CSRF vulnerabilities, missing security measures
-- Instant local analysis without sending code to server
+### Security Explainer (AI + Cache)
+- Insight, risk, fix, attack scenario.
+- Optional fix effort and before/after impact.
+- Optional fix_code snippet shown in UI.
 
-#### 4. Before vs After Comparison
-- **NEW**: Visualize impact of security fixes
-- Side-by-side code comparisons (vulnerable vs secure)
-- Shows specific improvements and metrics
-- Demonstrates how fixes reduce attack surface
+### Focus Personalization
+- Finds and highlights user-specific focus areas using weak_areas.
+- Optional focus-first ordering for findings.
 
-### Risk Categories
+### Report Generator (New)
+- Generate structured report from vulnerabilities, explanations, and optional user profile.
+- AI mode via backend route.
+- Deterministic template fallback.
+- UI supports print/export.
 
-The platform analyzes FIVE risk categories:
+## Live Hacking Demo
 
-1. **Hacking / Security** (Critical Focus)
-   - HTTPS encryption status
-   - Security headers (X-Frame-Options, HSTS, etc.)
-   - Server banner disclosure
-   - Common attack vectors
+### Narration
+- AI narration through secure backend route.
+- Deterministic fallback narration.
+- Display safety filter for risky payload-like text.
 
-2. **Performance** (User Experience)
-   - Missing content compression
-   - Page load impact analysis
-   - Bandwidth optimization recommendations
+### Branching Story Mode (New)
+- Per-stage defensive choices (2-3 options).
+- AI-generated choices when available.
+- Deterministic cached choices by stage.
+- Chosen action influences stage momentum and narration tone.
 
-3. **Compliance & Privacy**
-   - GDPR compliance checks
-   - Privacy policy requirements
-   - Data protection measures
-   - Legal risk assessment
+### Safety and clarity
+- Persistent disclaimer banner.
+- Simulation mode and safe simulation badges.
+- Educational context label.
 
-4. **SEO & Discoverability**
-   - Search engine optimization
-   - Meta tags and structured data
-   - Sitemap considerations
-   - Traffic impact analysis
+## Try Attack
 
-5. **Accessibility**
-   - WCAG compliance verification
-   - Screen reader compatibility
-   - Keyboard navigation
-   - Color contrast and usability
+### Existing
+- Input sandbox for SQLi/XSS/command injection style learning.
+- Classification (correct/partial/incorrect).
+- Reasoning-aware coaching with fallback hints.
 
-### Interactive Learning Features
+### Strategy Scoring (New)
+- Strategy score 0-100 + insights.
+- AI mode via secure backend route.
+- Deterministic fallback from action history patterns:
+  - repeated mistakes
+  - delayed correct actions
+  - missing investigation/log behavior
+  - missed root-cause indicators
 
-#### Attack Timeline
-- Step-by-step visualization of exploitation process
-- Shows hacker actions and results at each stage
-- Makes abstract vulnerabilities concrete and understandable
-- Interactive expandable sections
+### Session Replay (New)
+- Replay timeline with step index, user action, attacker response, narration.
+- Auto-play with speed control (slow/normal/fast).
+- Works from stored local session history only.
 
-#### Try Attack Sandbox
-- **INTERACTIVE**: Type actual attack payloads
-- SQL Injection testing environment
-- XSS attack simulation
-- Command injection exploration
-- Real-time feedback showing results
-- Educational without enabling real hacking
+## Simulate Attack
 
-#### Interactive Demos
-- Sandbox environments for each vulnerability type
-- Pre-populated example payloads
-- Shows exactly how attacks work
-- Safe learning environment
+### Existing
+- Scenario generation with adaptive/manual mode.
+- Stateful progression and result explanation.
+- DB-first interaction logging with local fallback.
 
-#### Hack or Safe? Quiz
-- **GAMIFIED**: 10+ security challenge questions
-- Difficulty levels (Easy, Medium, Hard)
-- Point rewards for correct answers
-- Instant feedback with explanations
-- Learn by identifying vulnerabilities
-- Tracks your security knowledge
+### Memory-Based Attacker (New)
+- Internal attacker memory in simulation state:
+  - previous_failures
+  - preferred_style (stealth/aggressive)
+- Attacker adapts behavior from repeated user defenses/misses.
+- No API response structure changes.
 
-#### Explain Like I'm 5 (ELI5)
-- **Toggle-able**: Simplified explanations available on each finding
-- Uses analogies and real-world examples
-- Makes complex security concepts memorable
-- Perfect for beginners
-- Example: "HTTPS is like sending a letter in a locked box"
+### Session Replay (New)
+- Replay timeline exposed in scenario result view.
+- Auto-play with speed controls.
 
-#### Hacker Confidence Meter
-- **Visual Display**: 0-100% confidence score
-- Shows how difficult an exploit is
-- Indicates if it requires user interaction
-- Displays success rate estimates
-- Color-coded risk visualization
+## User Intelligence Layer
 
-#### Code Fix Snippets
-- Shows vulnerable code vs secure code
-- Side-by-side comparison
-- Syntax highlighting for clarity
-- Explains what each fix does
-- Copy-paste ready solutions
+### Profile fields
+- weak_areas
+- strengths
+- behavior_pattern
+- avg_score
 
-### User Interface
+### Generation and persistence
+- Computed from interaction history.
+- Stored additively in user_stats.
+- No existing field removals.
 
-#### Tab Navigation
-- **Analyze Website**: Check live sites
-- **Compare Sites**: Side-by-side security comparison
-- **Upload HTML**: Analyze local files
-- **Hack or Safe**: Gamified security quiz
-- **Learn Security**: Educational examples and guides
+### Product usage
+- Coaching bias in Try Attack.
+- Focus highlighting in Analyze Website.
+- Difficulty context signal in simulation/scenario generation.
 
-#### Result Filtering
-- Filter findings by category (Hacking, Performance, Compliance, SEO, Accessibility)
-- View total issues count
-- See severity breakdown (Critical, High, Medium, Low)
-- Quick-access category buttons
+## Global Intelligence UX (New)
 
-#### Result Visualization
-- Overall risk score with color coding
-- Severity breakdown with counts
-- Category filtering system
-- Expandable detailed findings
-- Before/after improvement tracking
+### Global AI Summary
+- Compact summary of strengths, weak areas, and next focus.
+- AI mode with deterministic fallback.
 
-### Educational Components
+### Guided Learning Path
+- Three recommended next steps.
+- AI mode with deterministic fallback.
 
-#### Learn Security Tab
-- Pre-built example findings
-- Demonstrates all feature types
-- Shows best practices
-- Hands-on learning materials
+## Security and Compliance Guarantees
 
-#### Security Badge System
-- Visual indicators for risk levels
-- Clear severity color coding
-- Easy-to-understand risk assessment
-- Memorable visual feedback
-
-## How Everything Connects
-
-1. **Analysis** → Get findings with detailed information
-2. **Categorize** → Filter by type of risk (security, performance, compliance, etc.)
-3. **Understand** → Use ELI5 toggle to simplify concepts
-4. **Learn** → Study code examples and attack timelines
-5. **Compare** → Benchmark against other sites
-6. **Practice** → Take quiz to test knowledge
-7. **Improve** → See before/after comparison of fixes
-
-## Target Users
-
-- **Beginners**: ELI5 explanations, quiz mode
-- **Developers**: Code examples, fix snippets
-- **Security Learners**: Attack timelines, interactive demos
-- **Site Owners**: Risk scores, comparison tool, fix recommendations
-- **Educators**: Gamified quiz, interactive learning
-
-## Key Differentiators
-
-- ✓ Multi-risk category analysis (not just hacking)
-- ✓ Compare two sites directly
-- ✓ Interactive sandbox for safe learning
-- ✓ Gamified quiz system
-- ✓ Before/after fix visualization
-- ✓ ELI5 toggle for beginners
-- ✓ Hacker confidence scoring
-- ✓ Attack timeline walkthrough
-- ✓ Code-based learning
-- ✓ Accessibility and SEO insights
-
+- No frontend API key exposure.
+- Existing endpoint contracts preserved.
+- Existing endpoint response shapes preserved.
+- Additive schema changes only.
+- Deterministic fallback available for all new AI-assisted features.
