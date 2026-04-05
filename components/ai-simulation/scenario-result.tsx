@@ -1,16 +1,18 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Scenario } from '@/lib/ai/scenario-types';
 import { getUserStats } from '@/lib/ai/user-tracking';
 import { AttackProgress } from '@/components/simulation/AttackProgress';
 import { ReasoningPanel } from '@/components/simulation/ReasoningPanel';
+import { buildReplayTimeline, replayDelay, type ReplaySpeed, type ReplayTimelineEntry } from '@/lib/services/replay-timeline';
 
 interface ScenarioResultProps {
   scenario: Scenario;
   userAction: string;
+  replayHistory?: ReplayTimelineEntry[];
 }
 
 function parseReasoningSection(value: string | undefined): string[] {
@@ -126,8 +128,12 @@ function getScoreMeaning(score: number): 'Excellent' | 'Good' | 'Needs Improveme
   return 'Poor';
 }
 
-export function ScenarioResult({ scenario, userAction }: ScenarioResultProps) {
+export function ScenarioResult({ scenario, userAction, replayHistory = [] }: ScenarioResultProps) {
   const isCorrect = userAction === scenario.correct_action;
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>('normal');
+  const [replayCursor, setReplayCursor] = useState(0);
+  const [replayPlaying, setReplayPlaying] = useState(false);
   const stats = useMemo(() => getUserStats(), [scenario.id, userAction]);
   const topMistake = stats.commonMistakes[0] ?? null;
   const reasoning = useMemo(() => parseReasoning(scenario.explanation.user), [scenario.explanation.user]);
@@ -145,6 +151,26 @@ export function ScenarioResult({ scenario, userAction }: ScenarioResultProps) {
   const classificationBadge = useMemo(() => getClassificationBadge(classification), [classification]);
   const scoreLabel = useMemo(() => getScoreMeaning(stats.accuracy), [stats.accuracy]);
   const transitionReason = reasoning.missedPoints[0] ?? scenario.explanation.hacker;
+  const replayTimeline = useMemo(() => buildReplayTimeline(replayHistory), [replayHistory]);
+
+  useEffect(() => {
+    if (!replayOpen || !replayPlaying || replayTimeline.length === 0) {
+      return;
+    }
+
+    if (replayCursor >= replayTimeline.length) {
+      setReplayPlaying(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setReplayCursor((prev) => prev + 1);
+    }, replayDelay(replaySpeed));
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [replayOpen, replayPlaying, replayCursor, replaySpeed, replayTimeline.length]);
 
   return (
     <Card
@@ -282,6 +308,89 @@ export function ScenarioResult({ scenario, userAction }: ScenarioResultProps) {
           <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200 transition-all duration-300 ease-out">
             <p className="font-semibold">⚠️ Hint (based on your recent actions):</p>
             <p className="mt-1">{subtleHint}</p>
+          </div>
+        )}
+
+        {replayTimeline.length > 0 && (
+          <div className="rounded-md border border-border/60 bg-background/40 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🎮 Session Replay</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setReplayOpen((prev) => !prev);
+                  if (!replayOpen) {
+                    setReplayCursor(0);
+                    setReplayPlaying(false);
+                  }
+                }}
+                className="rounded-md border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs text-foreground hover:bg-secondary/40"
+              >
+                ▶️ Replay Attack
+              </button>
+            </div>
+
+            {replayOpen && (
+              <div className="mt-3 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplayCursor(0);
+                      setReplayPlaying(true);
+                    }}
+                    className="rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary"
+                  >
+                    {replayPlaying ? 'Playing...' : 'Play'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReplayPlaying(false)}
+                    className="rounded-md border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs text-foreground"
+                  >
+                    Pause
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplayPlaying(false);
+                      setReplayCursor(0);
+                    }}
+                    className="rounded-md border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs text-foreground"
+                  >
+                    Reset
+                  </button>
+
+                  <div className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-secondary/20 p-1">
+                    {(['slow', 'normal', 'fast'] as const).map((speed) => (
+                      <button
+                        key={speed}
+                        type="button"
+                        onClick={() => setReplaySpeed(speed)}
+                        className={`rounded px-2 py-1 text-[11px] capitalize ${
+                          replaySpeed === speed ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {speed}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {replayTimeline.slice(0, Math.max(replayCursor, 1)).map((entry) => (
+                    <div key={`${entry.stepIndex}-${entry.userAction}`} className="rounded-md border border-border/60 bg-secondary/20 p-2 text-xs">
+                      <p className="font-medium text-foreground">Step {entry.stepIndex}</p>
+                      <p className="mt-1 text-muted-foreground">User action: {entry.userAction}</p>
+                      <p className="mt-1 text-muted-foreground">Attacker response: {entry.attackerResponse}</p>
+                      {entry.narration && (
+                        <p className="mt-1 text-muted-foreground">Narration: {entry.narration}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

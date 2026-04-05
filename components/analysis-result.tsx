@@ -6,11 +6,30 @@ import { SecurityFinding } from './security-finding';
 import { LiveUrlDemo } from './live-url-demo';
 import { Card } from '@/components/ui/card';
 import { buildSecurityExplanation, type SecurityExplainer } from './security-explainer';
+import { getUserStats } from '@/lib/ai/user-tracking';
 
 interface AnalysisResultProps {
   result: any;
   url: string;
 }
+
+type UserProfilePayload = {
+  stats?: {
+    weakAreas?: string[];
+  } | null;
+};
+
+type GeneratedReport = {
+  summary: string;
+  vulnerabilities: Array<{
+    title: string;
+    severity: string;
+    priority: 'High' | 'Medium' | 'Low';
+    risk: string;
+    fix: string;
+  }>;
+  recommendations: string[];
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   hacking: 'Security (Hacking)',
@@ -30,11 +49,71 @@ const CATEGORY_COLORS: Record<string, string> = {
   general: 'bg-gray-900/20 text-gray-400',
 };
 
+function getOrCreateLocalUserId(): string {
+  const existing = window.localStorage.getItem('hacklens_user_id');
+  if (existing) {
+    return existing;
+  }
+
+  const created = crypto.randomUUID();
+  window.localStorage.setItem('hacklens_user_id', created);
+  return created;
+}
+
+function normalizeTopic(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, '_');
+}
+
+function isFocusWeakAreaMatch(finding: SecurityFindingType, weakAreas: string[]): boolean {
+  if (weakAreas.length === 0) {
+    return false;
+  }
+
+  const text = [
+    finding.title,
+    finding.observed,
+    finding.impact,
+    finding.riskType ?? '',
+    finding.type ?? '',
+    finding.category,
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  const checks = weakAreas.map(normalizeTopic);
+
+  return checks.some((topic) => {
+    if (topic === 'input_validation') {
+      return (
+        text.includes('input') ||
+        text.includes('inject') ||
+        text.includes('xss') ||
+        text.includes('sql') ||
+        text.includes('command')
+      );
+    }
+
+    if (topic === 'phishing' || topic === 'impersonation' || topic === 'smishing') {
+      return text.includes('social') || text.includes('phish') || text.includes('imperson');
+    }
+
+    if (topic === 'malware') {
+      return text.includes('malware') || text.includes('payload') || text.includes('rce');
+    }
+
+    return text.includes(topic.replace(/_/g, ' ')) || text.includes(topic);
+  });
+}
+
 export function AnalysisResult({ result, url }: AnalysisResultProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showLiveDemo, setShowLiveDemo] = useState(false);
   const [selectedFinding, setSelectedFinding] = useState<string | null>(null);
   const [explanationsById, setExplanationsById] = useState<Record<string, SecurityExplainer>>({});
+  const [userWeakAreas, setUserWeakAreas] = useState<string[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [report, setReport] = useState<GeneratedReport | null>(null);
 
   const handleTryLiveDemo = (findingId: string, _url: string) => {
     setSelectedFinding(findingId);
@@ -64,6 +143,12 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
     ? findings.filter((f) => f.category === selectedCategory)
     : findings;
 
+  const prioritizedFindings = [...filteredFindings].sort((a, b) => {
+    const aFocus = isFocusWeakAreaMatch(a, userWeakAreas) ? 1 : 0;
+    const bFocus = isFocusWeakAreaMatch(b, userWeakAreas) ? 1 : 0;
+    return bFocus - aFocus;
+  });
+
   useEffect(() => {
     let cancelled = false;
 
@@ -92,11 +177,74 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
     };
   }, [findings]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUserWeakAreas() {
+      try {
+        const userId = getOrCreateLocalUserId();
+        const response = await fetch(`/api/user?userId=${encodeURIComponent(userId)}`);
+        if (!response.ok) {
+          throw new Error('profile-unavailable');
+        }
+
+        const payload = (await response.json()) as UserProfilePayload;
+        const weakAreas = payload.stats?.weakAreas ?? [];
+        if (!cancelled) {
+          setUserWeakAreas(Array.isArray(weakAreas) ? weakAreas : []);
+        }
+      } catch {
+        const fallbackWeakAreas = getUserStats().weakAreas;
+        if (!cancelled) {
+          setUserWeakAreas(fallbackWeakAreas);
+        }
+      }
+    }
+
+    void loadUserWeakAreas();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const getRiskColor = (score: number) => {
     if (score >= 75) return 'text-destructive';
     if (score >= 50) return 'text-accent';
     if (score >= 25) return 'text-yellow-500';
     return 'text-green-500';
+  };
+
+  const handleGenerateReport = async () => {
+    setReportLoading(true);
+    setReportError(null);
+
+    try {
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vulnerabilities: findings,
+          explanations: explanationsById,
+          userProfile: {
+            weak_areas: userWeakAreas,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('report-generation-failed');
+      }
+
+      const generated = (await response.json()) as GeneratedReport;
+      setReport(generated);
+    } catch {
+      setReportError('Unable to generate report right now. Please try again.');
+    } finally {
+      setReportLoading(false);
+    }
   };
 
   // If live demo is open, show it
@@ -171,7 +319,67 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
             </div>
           </div>
         </div>
+
+        {findings.length > 0 && (
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleGenerateReport}
+              disabled={reportLoading}
+              className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-60"
+            >
+              {reportLoading ? 'Generating Report...' : '📄 Generate Report'}
+            </button>
+
+            {report && (
+              <button
+                onClick={() => window.print()}
+                className="rounded-md border border-border/60 bg-secondary/20 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/40"
+              >
+                🖨️ Print / Export
+              </button>
+            )}
+          </div>
+        )}
+
+        {reportError && (
+          <p className="mt-3 text-sm text-destructive">{reportError}</p>
+        )}
       </Card>
+
+      {report && (
+        <Card className="bg-card border border-border p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-foreground">Generated Security Report</h3>
+          <p className="text-sm text-muted-foreground">{report.summary}</p>
+
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Vulnerabilities</p>
+            {report.vulnerabilities.map((item) => (
+              <div key={`${item.title}-${item.priority}`} className="rounded-md border border-border/60 bg-background/40 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-foreground">{item.title}</p>
+                  <span className="rounded-full border border-border/60 bg-secondary/20 px-2 py-0.5 text-xs text-muted-foreground">
+                    {item.priority} Priority
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Risk: {item.risk}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Fix: {item.fix}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">Recommendations</p>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {report.recommendations.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="text-primary">•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Card>
+      )}
 
       {/* Category Filter */}
       {findings.length > 0 && (
@@ -210,7 +418,7 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
         </Card>
       )}
 
-      {filteredFindings.length === 0 ? (
+      {prioritizedFindings.length === 0 ? (
         <Card className="bg-card border border-border p-8 text-center">
           <p className="text-lg font-semibold mb-2">Looks Pretty Solid!</p>
           <p className="text-muted-foreground">
@@ -225,20 +433,21 @@ export function AnalysisResult({ result, url }: AnalysisResultProps) {
           </p>
           {selectedCategory && (
             <p className="text-sm text-primary font-medium">
-              Showing {filteredFindings.length} findings in{' '}
+              Showing {prioritizedFindings.length} findings in{' '}
               <span className={CATEGORY_COLORS[selectedCategory]}>
                 {CATEGORY_LABELS[selectedCategory]}
               </span>
             </p>
           )}
           <div className="space-y-4">
-            {filteredFindings.map((finding) => (
+            {prioritizedFindings.map((finding) => (
               <SecurityFinding 
                 key={finding.id} 
                 finding={finding}
                 explanation={explanationsById[finding.id]}
                 url={url}
                 onTryLiveDemo={handleTryLiveDemo}
+                isFocusArea={isFocusWeakAreaMatch(finding, userWeakAreas)}
               />
             ))}
           </div>

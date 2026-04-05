@@ -2,6 +2,7 @@ import { query } from "@/lib/server/db";
 import type { UserStats } from "@/lib/ai/user-tracking";
 import { currentUser } from "@clerk/nextjs/server";
 import { log, logService } from "@/lib/server/logger";
+import { computeUserProfile } from "@/lib/services/user-intelligence";
 
 export type DBInteractionInput = {
   userId: string;
@@ -117,6 +118,53 @@ function calculateAccuracy(correct: number, attempts: number): number {
   return Math.round((correct / attempts) * 100);
 }
 
+async function refreshUserIntelligenceProfile(userId: string): Promise<void> {
+  const interactionsResult = await query(
+    `
+      SELECT scenario_type, is_correct, selected_action, correct_action
+      FROM interactions
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 250
+    `,
+    [userId]
+  );
+
+  const interactions = (interactionsResult.rows as Array<{
+    scenario_type: string;
+    is_correct: boolean;
+    selected_action: string | null;
+    correct_action: string | null;
+  }>).map((row) => ({
+    scenarioType: row.scenario_type,
+    isCorrect: row.is_correct,
+    selectedAction: row.selected_action,
+    correctAction: row.correct_action,
+  }));
+
+  const profile = computeUserProfile(interactions);
+
+  await query(
+    `
+      UPDATE user_stats
+      SET
+        weak_areas = $2::jsonb,
+        strengths = $3::jsonb,
+        behavior_pattern = $4,
+        avg_score = $5,
+        updated_at = NOW()
+      WHERE user_id = $1
+    `,
+    [
+      userId,
+      JSON.stringify(profile.weak_areas),
+      JSON.stringify(profile.strengths),
+      profile.behavior_pattern,
+      profile.avg_score,
+    ]
+  );
+}
+
 export async function logInteractionDB(data: DBInteractionInput): Promise<void> {
   try {
     await query(
@@ -160,6 +208,8 @@ export async function logInteractionDB(data: DBInteractionInput): Promise<void> 
       `,
       [data.userId, data.isCorrect]
     );
+
+    await refreshUserIntelligenceProfile(data.userId);
 
     logService("user-service", "interaction_logged", {
       userId: data.userId,

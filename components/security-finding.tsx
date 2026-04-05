@@ -17,6 +17,7 @@ interface SecurityFindingProps {
   explanation?: SecurityExplainer;
   url?: string;
   onTryLiveDemo?: (findingId: string, url: string) => void;
+  isFocusArea?: boolean;
 }
 
 const severityConfig = {
@@ -50,7 +51,7 @@ function getFixPriority(finding: SecurityFindingType): 'High' | 'Medium' | 'Low'
   return 'Low';
 }
 
-export function SecurityFinding({ finding, explanation, url, onTryLiveDemo }: SecurityFindingProps) {
+export function SecurityFinding({ finding, explanation, url, onTryLiveDemo, isFocusArea = false }: SecurityFindingProps) {
   const [expanded, setExpanded] = useState(false);
   const config = severityConfig[finding.severity];
   const severityMessage = getSeverityMessage(finding.severity);
@@ -67,6 +68,11 @@ export function SecurityFinding({ finding, explanation, url, onTryLiveDemo }: Se
             <span className={`px-2 py-1 rounded text-xs font-medium ${config.bg} ${config.text}`}>
               {config.label}
             </span>
+            {isFocusArea && (
+              <span className="px-2 py-1 rounded text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-300">
+                ⚠️ Focus Area for You
+              </span>
+            )}
             <span className="text-xs text-muted-foreground">{finding.category}</span>
           </div>
           <h3 className="text-lg font-semibold">{finding.title}</h3>
@@ -139,6 +145,15 @@ export function SecurityFinding({ finding, explanation, url, onTryLiveDemo }: Se
                 <p className="text-xs font-semibold uppercase tracking-wide text-accent">🛠 Fix</p>
                 <p className="mt-1 text-sm text-muted-foreground">{explanation.fix}</p>
               </div>
+
+              {explanation.fix_code && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-accent">🛠 Fix Code</p>
+                  <pre className="mt-1 overflow-x-auto rounded-md border border-border/60 bg-background/70 p-3 text-xs text-foreground">
+                    <code>{explanation.fix_code}</code>
+                  </pre>
+                </div>
+              )}
 
               <div className="rounded-md border border-border/50 bg-secondary/20 px-3 py-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">⏱ Fix Priority</p>

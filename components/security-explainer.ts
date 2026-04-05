@@ -5,6 +5,7 @@ export type SecurityExplainer = {
   insight: string;
   risk: string;
   fix: string;
+  fix_code?: string;
   attack_scenario?: string;
   fix_effort?: 'Easy' | 'Moderate' | 'Advanced';
   impact?: {
@@ -64,6 +65,7 @@ export function getCachedExplanation(vulnerabilityType: string, title: string): 
       insight: 'Allows attackers to send crafted input that changes database queries.',
       risk: 'Sensitive data can be leaked, modified, or deleted.',
       fix: 'Use parameterized queries and strict server-side input validation.',
+      fix_code: "const query = 'SELECT * FROM users WHERE id = ?';\ndb.execute(query, [userId]);",
       attack_scenario:
         'A login form accepts crafted SQL payloads, letting an attacker dump user records from the database.',
       fix_effort: 'Moderate',
@@ -81,6 +83,7 @@ export function getCachedExplanation(vulnerabilityType: string, title: string): 
       insight: 'Allows attackers to inject scripts that run in a victim browser.',
       risk: 'Can lead to session hijacking, account abuse, or data theft.',
       fix: 'Sanitize and escape untrusted input before rendering it in the page.',
+      fix_code: 'sanitize(input);',
       attack_scenario:
         'A comment field stores malicious JavaScript that executes for every visitor and steals active session tokens.',
       fix_effort: 'Moderate',
@@ -132,6 +135,7 @@ export function getCachedExplanation(vulnerabilityType: string, title: string): 
       insight: 'Important browser-side protections are missing or weak.',
       risk: 'Can make common attacks easier to execute against users.',
       fix: 'Apply recommended security headers and harden default server settings.',
+      fix_code: "res.setHeader('Content-Security-Policy', \"default-src 'self'\");",
       attack_scenario:
         'Without strict browser headers, injected content is executed more easily during a reflected XSS attempt.',
       fix_effort: 'Easy',
@@ -148,6 +152,7 @@ export function getCachedExplanation(vulnerabilityType: string, title: string): 
     insight: 'This indicates a security weakness that could be abused if unaddressed.',
     risk: 'May impact confidentiality, integrity, or availability of your system.',
     fix: 'Apply least-privilege controls, validate inputs, and patch configuration gaps.',
+    fix_code: 'validateInput(request.body);\napplyLeastPrivilege();',
     attack_scenario:
       'An attacker chains this weakness with reconnaissance to escalate access and move deeper into the application.',
     fix_effort: 'Moderate',

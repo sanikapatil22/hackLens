@@ -11,6 +11,7 @@ import { InteractiveDemo } from '@/components/interactive-demo';
 import { LiveUrlDemo } from '@/components/live-url-demo';
 import SimulateAttack from '@/components/ai-simulation/simulate-attack';
 import DotBackgroundDemo from '@/components/dot-background-demo';
+import { GlobalIntelligencePanel } from '@/components/global-intelligence-panel';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('website');
@@ -55,6 +56,10 @@ export default function Home() {
           {/* Tabs Navigation */}
           <div className="w-full px-4 md:px-8 lg:px-12">
             <TabsNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+          </div>
+
+          <div className="mt-4 w-full px-4 md:px-8 lg:px-12">
+            <GlobalIntelligencePanel />
           </div>
 
           {/* Tab Content */}

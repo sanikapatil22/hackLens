@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS user_stats (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS weak_areas JSONB;
+ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS strengths JSONB;
+ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS behavior_pattern TEXT;
+ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS avg_score FLOAT;
+
 CREATE INDEX IF NOT EXISTS idx_interactions_user_id ON interactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_type ON interactions(scenario_type);
 CREATE INDEX IF NOT EXISTS idx_interactions_created_at ON interactions(created_at);

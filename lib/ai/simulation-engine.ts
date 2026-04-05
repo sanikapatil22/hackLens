@@ -4,6 +4,10 @@ import { generateScenarioWithLLM } from "../server/llm-client";
 export type SimulationOutcome = "success" | "partial" | "failure";
 type SystemStatus = "secured" | "degraded" | "compromised" | "fully_compromised";
 type AttackerProgress = "foothold" | "privilege_escalation" | "lateral_movement" | "exfiltration";
+type AttackerMemory = {
+  previous_failures: string[];
+  preferred_style: "stealth" | "aggressive";
+};
 const ATTACK_STAGES = [
   "initial_access",
   "privilege_escalation",
@@ -54,6 +58,7 @@ export interface SimulationState {
   status: "in_progress" | "completed";
   system_status?: SystemStatus;
   attacker_progress?: AttackerProgress;
+  attacker_memory?: AttackerMemory;
   history: Array<{
     step: number;
     userAction: string;
@@ -70,6 +75,7 @@ export interface SimulationScenarioContext {
   objective?: string;
   correctAction?: string;
   redFlags?: string[];
+  weakAreas?: string[];
 }
 
 export interface SimulationStepResult {
@@ -106,6 +112,25 @@ function normalizeAttackerProgress(value: SimulationState["attacker_progress"]):
   return "foothold";
 }
 
+function normalizeAttackerMemory(value: SimulationState["attacker_memory"]): AttackerMemory {
+  if (!value) {
+    return {
+      previous_failures: [],
+      preferred_style: "aggressive",
+    };
+  }
+
+  const style = value.preferred_style === "stealth" ? "stealth" : "aggressive";
+  const failures = Array.isArray(value.previous_failures)
+    ? value.previous_failures.filter((entry) => typeof entry === "string").slice(-6)
+    : [];
+
+  return {
+    previous_failures: failures,
+    preferred_style: style,
+  };
+}
+
 function nextAttackerProgress(current: AttackerProgress): AttackerProgress {
   switch (current) {
     case "foothold":
@@ -140,6 +165,7 @@ function normalizeState(input: SimulationState): SimulationState {
     status: input.status === "completed" ? "completed" : "in_progress",
     system_status: normalizeSystemStatus(input.system_status),
     attacker_progress: normalizeAttackerProgress(input.attacker_progress),
+    attacker_memory: normalizeAttackerMemory(input.attacker_memory),
     history: Array.isArray(input.history) ? input.history : [],
   };
 }
@@ -168,7 +194,8 @@ function predictFailure(
     missed_points: string[];
     next_steps: string[];
   },
-  classification: "correct" | "partial" | "incorrect"
+  classification: "correct" | "partial" | "incorrect",
+  weakAreaSignal: boolean
 ): boolean {
   const incorrectSignal = classification === "incorrect";
   const missedSignal = reasoning.missed_points.length >= 2;
@@ -177,7 +204,7 @@ function predictFailure(
   const recent = state.history.slice(-3);
   const repeatedMistakes = recent.filter((entry) => entry.outcome !== "success").length >= 2;
 
-  const signalCount = [incorrectSignal, missedSignal, lowScoreSignal, repeatedMistakes].filter(Boolean).length;
+  const signalCount = [incorrectSignal, missedSignal, lowScoreSignal, repeatedMistakes, weakAreaSignal].filter(Boolean).length;
   return signalCount >= 2;
 }
 
@@ -198,6 +225,10 @@ function buildSimulationPrompt(
   const recentHistory = formatRecentHistory(state);
   const currentStage = stageFromProgress(state.attacker_progress);
   const allowedNext = ATTACK_TRANSITIONS[currentStage];
+  const weakAreas = context.weakAreas && context.weakAreas.length > 0
+    ? context.weakAreas.join(", ")
+    : "none";
+  const attackerMemory = normalizeAttackerMemory(state.attacker_memory);
 
   return [
     "Generate the next attacker move for a multi-step cyber training simulation.",
@@ -221,6 +252,7 @@ function buildSimulationPrompt(
     "User actions influence pathing: good defense may force strategy change, weak defense may accelerate progression.",
     "The attacker may escalate privileges, move laterally, attempt exfiltration, or remain stealthy if beneficial.",
     "The attacker may choose to remain stealthy and delay visible actions if it improves long-term success or avoids detection.",
+    "Attacker should adapt based on previous failures and user defenses.",
     "In explanation.developer, append a stage marker as: STAGE: <initial_access|privilege_escalation|lateral_movement|exfiltration>",
     `Current step: ${state.step}/${state.maxSteps}`,
     `Current system status: ${state.system_status}`,
@@ -229,6 +261,9 @@ function buildSimulationPrompt(
     `Allowed next stages: ${allowedNext.length > 0 ? allowedNext.join(", ") : "none"}`,
     `Scenario title: ${context.title ?? "N/A"}`,
     `Scenario content: ${context.content ?? "N/A"}`,
+    `User weak areas: ${weakAreas}`,
+    `Attacker preferred style: ${attackerMemory.preferred_style}`,
+    `Attacker previous failures: ${attackerMemory.previous_failures.length > 0 ? attackerMemory.previous_failures.join(", ") : "none"}`,
     `User action in previous step: ${userAction}`,
     `Recent steps:\n${recentHistory}`,
     `Training objective: ${context.objective ?? "Teach secure decision-making."}`,
@@ -248,6 +283,67 @@ function buildSimulationPrompt(
 
 function stageFromProgress(progress: SimulationState["attacker_progress"]): AttackStage {
   return PROGRESS_TO_STAGE[normalizeAttackerProgress(progress)];
+}
+
+function normalizeTopic(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, "_");
+}
+
+function isWeakAreaMatch(
+  weakAreas: string[] | undefined,
+  context: SimulationScenarioContext,
+  currentStage: AttackStage
+): boolean {
+  if (!weakAreas || weakAreas.length === 0) {
+    return false;
+  }
+
+  const normalized = weakAreas.map(normalizeTopic);
+  const scenarioType = normalizeTopic(context.type);
+
+  if (normalized.includes(scenarioType) || normalized.includes(currentStage)) {
+    return true;
+  }
+
+  if (normalized.includes("input_validation")) {
+    return scenarioType === "phishing" || scenarioType === "smishing" || currentStage === "initial_access";
+  }
+
+  return false;
+}
+
+function deriveAttackerMemory(
+  state: SimulationState,
+  userAction: string,
+  classification: "correct" | "partial" | "incorrect"
+): AttackerMemory {
+  const current = normalizeAttackerMemory(state.attacker_memory);
+  const action = userAction.toLowerCase();
+  const previousFailures = [...current.previous_failures];
+
+  if (classification === "incorrect") {
+    previousFailures.push(`missed:${state.step}`);
+  }
+
+  if (action.includes("block") && action.includes("network")) {
+    previousFailures.push("network_blocked");
+  }
+
+  const recent = previousFailures.slice(-6);
+  const repeatedBlocks = recent.filter((entry) => entry.includes("network_blocked")).length >= 2;
+  const repeatedMisses = recent.filter((entry) => entry.includes("missed")).length >= 2;
+
+  let preferredStyle: "stealth" | "aggressive" = current.preferred_style;
+  if (repeatedBlocks || action.includes("block") || action.includes("isolate")) {
+    preferredStyle = "stealth";
+  } else if (repeatedMisses) {
+    preferredStyle = "aggressive";
+  }
+
+  return {
+    previous_failures: recent,
+    preferred_style: preferredStyle,
+  };
 }
 
 function progressFromStage(stage: AttackStage): AttackerProgress {
@@ -286,7 +382,8 @@ function getNextStage(
   classification: "correct" | "partial" | "incorrect",
   action: string,
   stepIndex: number,
-  willLikelyFail: boolean
+  willLikelyFail: boolean,
+  attackerMemory: AttackerMemory
 ): AttackStage {
   if (currentStage === "exfiltration") {
     return "exfiltration";
@@ -315,10 +412,21 @@ function getNextStage(
     normalizedAction.includes("audit logs") ||
     normalizedAction.includes("log analysis")
   ) {
+    if (stepIndex <= 2 && allowed.length > 0) {
+      const fastestEscalation = [...allowed].sort(
+        (a, b) => ATTACK_STAGES.indexOf(b) - ATTACK_STAGES.indexOf(a)
+      )[0];
+      return fastestEscalation;
+    }
+
     return currentStage;
   }
 
-  if (normalizedAction.includes("block ip")) {
+  if (normalizedAction.includes("block ip") || normalizedAction.includes("block network")) {
+    if (attackerMemory.preferred_style === "stealth") {
+      return currentStage;
+    }
+
     return "privilege_escalation";
   }
 
@@ -388,9 +496,10 @@ function resolveAiNextStage(
   classification: "correct" | "partial" | "incorrect",
   action: string,
   stepIndex: number,
-  willLikelyFail: boolean
+  willLikelyFail: boolean,
+  attackerMemory: AttackerMemory
 ): AttackStage {
-  const deterministicFallback = getNextStage(currentStage, classification, action, stepIndex, willLikelyFail);
+  const deterministicFallback = getNextStage(currentStage, classification, action, stepIndex, willLikelyFail, attackerMemory);
   if (!aiCandidateStage) {
     return deterministicFallback;
   }
@@ -784,21 +893,23 @@ function buildFallbackResult(
   const evaluation = evaluateAction(userAction, context.correctAction);
   const initialClassification = classificationFromOutcome(evaluation.outcome);
   const baselineReasoning = generateReasoningFromCache(userAction, initialClassification, state.step, false);
-  let baselinePrediction = predictFailure(state, baselineReasoning, initialClassification);
+  const weakAreaSignal = isWeakAreaMatch(context.weakAreas, context, stageFromProgress(state.attacker_progress));
+  let baselinePrediction = predictFailure(state, baselineReasoning, initialClassification, weakAreaSignal);
   if (hasRecentRecovery(state)) {
     baselinePrediction = false;
   }
 
   const reasoning = generateReasoningFromCache(userAction, initialClassification, state.step, baselinePrediction);
   const classification = alignClassificationWithReasoning(initialClassification, reasoning);
-  let willLikelyFail = predictFailure(state, reasoning, classification);
+  const attackerMemory = deriveAttackerMemory(state, userAction, classification);
+  let willLikelyFail = predictFailure(state, reasoning, classification, weakAreaSignal);
   if (hasRecentRecovery(state)) {
     willLikelyFail = false;
   }
 
   const nextStep = Math.min(state.step + 1, state.maxSteps);
   const currentStage = stageFromProgress(state.attacker_progress);
-  const deterministicStage = getNextStage(currentStage, classification, userAction, state.step, willLikelyFail);
+  const deterministicStage = getNextStage(currentStage, classification, userAction, state.step, willLikelyFail, attackerMemory);
   const nextStage = applyCriticalMistakeEscalation(currentStage, deterministicStage, classification, state.step, reasoning);
   const evolved = evolveState(state, evaluation, progressFromStage(nextStage));
 
@@ -830,6 +941,7 @@ function buildFallbackResult(
     status: evolved.status,
     system_status: evolved.system_status,
     attacker_progress: evolved.attacker_progress,
+    attacker_memory: attackerMemory,
     history: [
       ...state.history,
       {
@@ -893,20 +1005,27 @@ export async function runSimulationStep(
   try {
     const promptEvaluation = evaluateAction(userAction, scenarioContext.correctAction);
     const promptClassification = classificationFromOutcome(promptEvaluation.outcome);
+    const promptMemory = deriveAttackerMemory(state, userAction, promptClassification);
     const promptReasoning = generateReasoningFromCache(userAction, promptClassification, state.step, false);
-    let willLikelyFail = predictFailure(state, promptReasoning, promptClassification);
+    const weakAreaSignal = isWeakAreaMatch(
+      scenarioContext.weakAreas,
+      scenarioContext,
+      stageFromProgress(state.attacker_progress)
+    );
+    let willLikelyFail = predictFailure(state, promptReasoning, promptClassification, weakAreaSignal);
     if (hasRecentRecovery(state)) {
       willLikelyFail = false;
     }
 
-    const prompt = buildSimulationPrompt(state, userAction, scenarioContext, willLikelyFail);
+    const prompt = buildSimulationPrompt({ ...state, attacker_memory: promptMemory }, userAction, scenarioContext, willLikelyFail);
     const aiScenario = await generateSimulationStepWithLLM(prompt, scenarioContext);
 
     const evaluation = evaluateAction(userAction, scenarioContext.correctAction ?? aiScenario.correct_action);
     const initialClassification = classificationFromOutcome(evaluation.outcome);
     const reasoning = buildAiReasoning(userAction, initialClassification, aiScenario.explanation.user, state.step, willLikelyFail);
     const classification = alignClassificationWithReasoning(initialClassification, reasoning);
-    let likelyFailForBranching = predictFailure(state, reasoning, classification);
+    const attackerMemory = deriveAttackerMemory(state, userAction, classification);
+    let likelyFailForBranching = predictFailure(state, reasoning, classification, weakAreaSignal);
     if (hasRecentRecovery(state)) {
       likelyFailForBranching = false;
     }
@@ -914,7 +1033,7 @@ export async function runSimulationStep(
     const nextStep = Math.min(state.step + 1, state.maxSteps);
     const currentStage = stageFromProgress(state.attacker_progress);
     const aiCandidateStage = parseNextStageFromAiScenario(aiScenario);
-    const resolvedStage = resolveAiNextStage(currentStage, aiCandidateStage, classification, userAction, state.step, likelyFailForBranching);
+    const resolvedStage = resolveAiNextStage(currentStage, aiCandidateStage, classification, userAction, state.step, likelyFailForBranching, attackerMemory);
     const nextStage = applyCriticalMistakeEscalation(currentStage, resolvedStage, classification, state.step, reasoning);
     const evolved = evolveState(state, evaluation, progressFromStage(nextStage));
     const attackerReaction = aiScenario.explanation.hacker || aiScenario.content;
@@ -927,6 +1046,7 @@ export async function runSimulationStep(
       status: evolved.status,
       system_status: evolved.system_status,
       attacker_progress: evolved.attacker_progress,
+      attacker_memory: attackerMemory,
       history: [
         ...state.history,
         {

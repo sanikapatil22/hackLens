@@ -9,6 +9,7 @@ type SecurityExplainer = {
   insight: string;
   risk: string;
   fix: string;
+  fix_code?: string;
   attack_scenario?: string;
   fix_effort?: 'Easy' | 'Moderate' | 'Advanced';
   impact?: {
@@ -51,6 +52,7 @@ function getCachedExplanation(vulnerabilityType: string, title: string): Securit
       insight: 'Allows attackers to alter database queries using crafted input.',
       risk: 'Sensitive records can be leaked, changed, or deleted.',
       fix: 'Use parameterized queries and validate untrusted input on the server.',
+      fix_code: "const query = 'SELECT * FROM users WHERE id = ?';\ndb.execute(query, [userId]);",
       attack_scenario:
         'An attacker submits a crafted login payload and extracts user account data from the database.',
       fix_effort: 'Moderate',
@@ -68,6 +70,7 @@ function getCachedExplanation(vulnerabilityType: string, title: string): Securit
       insight: 'Allows injected scripts to run in a victim browser context.',
       risk: 'Can lead to cookie theft, account takeover, and malicious redirects.',
       fix: 'Escape output by context and sanitize untrusted content before rendering.',
+      fix_code: 'sanitize(input);',
       attack_scenario:
         'A malicious script is posted in user content and executes whenever another user opens the page.',
       fix_effort: 'Moderate',
@@ -85,6 +88,7 @@ function getCachedExplanation(vulnerabilityType: string, title: string): Securit
       insight: 'Exposes unnecessary services to the internet.',
       risk: 'Attackers can scan and target exposed endpoints for unauthorized access.',
       fix: 'Close unused ports and restrict network access to trusted sources only.',
+      fix_code: 'allowFromTrustedIPsOnly();\ncloseUnusedPorts();',
       attack_scenario:
         'Automated scanners discover an exposed admin service and brute-force weak credentials.',
       fix_effort: 'Easy',
@@ -101,6 +105,7 @@ function getCachedExplanation(vulnerabilityType: string, title: string): Securit
     insight: 'This issue indicates a security weakness that can be abused if left unresolved.',
     risk: 'It may enable data exposure, service disruption, or privilege escalation.',
     fix: 'Apply least-privilege controls, tighten configuration, and validate untrusted inputs.',
+    fix_code: 'validateInput(request.body);\napplySecurityHeaders(response);',
     attack_scenario:
       'An attacker combines this weakness with reconnaissance to increase access and impact.',
     fix_effort: mapFixEffort(normalized),
@@ -141,6 +146,10 @@ function parseAiExplanation(rawText: string, title: string, vulnerabilityType: s
     insight: parsed.insight.trim(),
     risk: parsed.risk.trim(),
     fix: parsed.fix.trim(),
+    fix_code:
+      typeof parsed.fix_code === 'string' && parsed.fix_code.trim().length > 0
+        ? parsed.fix_code.trim()
+        : undefined,
     attack_scenario:
       typeof parsed.attack_scenario === 'string' && parsed.attack_scenario.trim().length > 0
         ? parsed.attack_scenario.trim()
@@ -208,9 +217,11 @@ async function getAiExplanation(vulnerabilityType: string, title: string): Promi
               '- risk: real-world consequence',
               '- fix: how to solve it',
               '- attack_scenario: short real-world attack scenario',
+              '- fix_code: short secure code fix snippet (2-4 lines max)',
               '- fix_effort: Easy | Moderate | Advanced',
               '- impact: { before: string, after: string }',
               '',
+              'Also generate a short secure code fix example for this vulnerability.',
               'Keep it concise and beginner-friendly.',
             ].join('\n'),
           },

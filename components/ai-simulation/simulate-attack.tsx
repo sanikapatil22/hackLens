@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getAdaptiveParams } from '@/lib/ai/adaptive-engine';
 import type { Scenario } from '@/lib/ai/scenario-types';
 import { getUserStats, logInteraction } from '@/lib/ai/user-tracking';
+import type { ReplayTimelineEntry } from '@/lib/services/replay-timeline';
 
 import { ScenarioControls } from './scenario-controls';
 import { ScenarioDisplay } from './scenario-display';
@@ -52,6 +53,7 @@ export default function SimulateAttack() {
   const [simulationCount, setSimulationCount] = useState(0);
   const [upgradePromptDismissed, setUpgradePromptDismissed] = useState(false);
   const [sessionStats, setSessionStats] = useState<PersonalizationStats | null>(null);
+  const [replayHistory, setReplayHistory] = useState<ReplayTimelineEntry[]>([]);
 
   const getOrCreateLocalUserId = useCallback((): string => {
     const existingUserId = window.localStorage.getItem('hacklens_user_id');
@@ -133,6 +135,12 @@ export default function SimulateAttack() {
       const params = adaptiveMode
         ? getAdaptiveParams()
         : { type, difficulty, selectionMode: 'manual' as const };
+      const weakAreasContext = sessionStats?.weakAreas?.length
+        ? `User weak areas: ${sessionStats.weakAreas.join(', ')}`
+        : undefined;
+      const paramsWithContext = weakAreasContext
+        ? { ...params, context: weakAreasContext }
+        : params;
       if (adaptiveMode) {
         setType(params.type);
         setDifficulty(params.difficulty);
@@ -144,7 +152,7 @@ export default function SimulateAttack() {
         body: JSON.stringify({
           mode,
           adaptive: adaptiveMode,
-          params,
+          params: paramsWithContext,
         }),
       });
 
@@ -179,6 +187,15 @@ export default function SimulateAttack() {
       timestamp: Date.now(),
     };
 
+    const nextReplayEntry: ReplayTimelineEntry = {
+      stepIndex: replayHistory.length + 1,
+      userAction: option,
+      attackerResponse: scenario.explanation.hacker,
+      narration: scenario.explanation.user,
+    };
+
+    setReplayHistory((prev) => [...prev, nextReplayEntry].slice(-15));
+
     const nextCount = simulationCount + 1;
     setSimulationCount(nextCount);
     if (typeof window !== 'undefined') {
@@ -205,13 +222,20 @@ export default function SimulateAttack() {
       if (payload.fallback === true || payload.source !== 'db') {
         logInteraction(interaction);
         applyLocalFallbackStats();
+        const fallback = getUserStats();
+        window.localStorage.setItem('hacklens_simulation_recent_accuracy', `${fallback.accuracy}% (fallback)`);
         return;
       }
 
       await loadSessionStats();
+      if (payload.stats?.accuracy !== undefined) {
+        window.localStorage.setItem('hacklens_simulation_recent_accuracy', `${payload.stats.accuracy}% (db)`);
+      }
     } catch {
       logInteraction(interaction);
       applyLocalFallbackStats();
+      const fallback = getUserStats();
+      window.localStorage.setItem('hacklens_simulation_recent_accuracy', `${fallback.accuracy}% (fallback)`);
     }
   }
 
@@ -329,7 +353,7 @@ export default function SimulateAttack() {
       {scenario && <ScenarioDisplay scenario={scenario} onAction={handleAction} />}
 
       {showResult && scenario && userAction && (
-        <ScenarioResult scenario={scenario} userAction={userAction} />
+        <ScenarioResult scenario={scenario} userAction={userAction} replayHistory={replayHistory} />
       )}
     </div>
   );

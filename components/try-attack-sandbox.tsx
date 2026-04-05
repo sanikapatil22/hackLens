@@ -2,7 +2,10 @@
 
 import { InteractiveDemo } from '@/types/security';
 import { AlertCircle, Copy, Zap } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getUserStats } from '@/lib/ai/user-tracking';
+import { computeStrategyScore, type StrategyHistoryEntry } from '@/lib/services/strategy-scoring';
+import { buildReplayTimeline, replayDelay, type ReplaySpeed, type ReplayTimelineEntry } from '@/lib/services/replay-timeline';
 
 interface TryAttackSandboxProps {
   demo: InteractiveDemo;
@@ -20,6 +23,12 @@ type DerivedCoach = {
   hint: string;
   mistake: string;
   next: string;
+};
+
+type UserProfilePayload = {
+  stats?: {
+    weakAreas?: string[];
+  } | null;
 };
 
 function getClassificationBadge(classification: EvaluationClassification): {
@@ -111,9 +120,59 @@ function deriveAttackCoach(
   return getCachedAttackCoach(action, classification);
 }
 
+function getOrCreateLocalUserId(): string {
+  const existing = window.localStorage.getItem('hacklens_user_id');
+  if (existing) {
+    return existing;
+  }
+
+  const created = crypto.randomUUID();
+  window.localStorage.setItem('hacklens_user_id', created);
+  return created;
+}
+
+function normalizeTopic(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, '_');
+}
+
+function getDemoFocusTopic(demoType: InteractiveDemo['type']): string {
+  if (demoType === 'sql-injection' || demoType === 'xss' || demoType === 'command-injection') {
+    return 'input_validation';
+  }
+
+  return 'request_integrity';
+}
+
+function applyWeakAreaHintBias(
+  coach: DerivedCoach,
+  weakAreas: string[],
+  demoType: InteractiveDemo['type']
+): DerivedCoach {
+  const topic = getDemoFocusTopic(demoType);
+  const normalizedAreas = weakAreas.map(normalizeTopic);
+
+  const isFocusTopic =
+    normalizedAreas.includes(topic) ||
+    (topic === 'input_validation' && normalizedAreas.some((area) => area.includes('inject') || area.includes('input')));
+
+  if (!isFocusTopic) {
+    return coach;
+  }
+
+  if (coach.hint.toLowerCase().includes('input')) {
+    return coach;
+  }
+
+  return {
+    ...coach,
+    hint: 'Pay attention to how inputs are handled. Validate and sanitize before execution.',
+  };
+}
+
 export function TryAttackSandbox({ demo }: TryAttackSandboxProps) {
   const [input, setInput] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [userWeakAreas, setUserWeakAreas] = useState<string[]>([]);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
@@ -124,6 +183,65 @@ export function TryAttackSandbox({ demo }: TryAttackSandboxProps) {
     };
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [strategyHistory, setStrategyHistory] = useState<StrategyHistoryEntry[]>([]);
+  const [strategyFeedback, setStrategyFeedback] = useState<{ score: number; insights: string[] } | null>(null);
+  const [replayHistory, setReplayHistory] = useState<ReplayTimelineEntry[]>([]);
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>('normal');
+  const [replayCursor, setReplayCursor] = useState(0);
+  const [replayPlaying, setReplayPlaying] = useState(false);
+
+  const replayTimeline = buildReplayTimeline(replayHistory);
+
+  useEffect(() => {
+    if (!replayOpen || !replayPlaying || replayTimeline.length === 0) {
+      return;
+    }
+
+    if (replayCursor >= replayTimeline.length) {
+      setReplayPlaying(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setReplayCursor((prev) => prev + 1);
+    }, replayDelay(replaySpeed));
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [replayOpen, replayPlaying, replayCursor, replaySpeed, replayTimeline.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUserWeakAreas() {
+      try {
+        const userId = getOrCreateLocalUserId();
+        const response = await fetch(`/api/user?userId=${encodeURIComponent(userId)}`);
+        if (!response.ok) {
+          throw new Error('user-profile-unavailable');
+        }
+
+        const payload = (await response.json()) as UserProfilePayload;
+        const weakAreas = payload.stats?.weakAreas ?? [];
+        if (!cancelled) {
+          setUserWeakAreas(Array.isArray(weakAreas) ? weakAreas : []);
+        }
+      } catch {
+        const fallbackWeakAreas = getUserStats().weakAreas;
+        if (!cancelled) {
+          setUserWeakAreas(fallbackWeakAreas);
+        }
+      }
+    }
+
+    void loadUserWeakAreas();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSimulateAttack = () => {
     setIsSimulating(true);
@@ -207,6 +325,37 @@ export function TryAttackSandbox({ demo }: TryAttackSandboxProps) {
           reasoning,
         },
       });
+
+      const updatedHistory: StrategyHistoryEntry[] = [
+        ...strategyHistory,
+        {
+          classification,
+          action: input,
+          reasoning,
+        },
+      ].slice(-15);
+
+      const updatedReplay: ReplayTimelineEntry[] = [
+        ...replayHistory,
+        {
+          stepIndex: replayHistory.length + 1,
+          userAction: input,
+          attackerResponse: message,
+          narration: reasoning?.next_steps?.[0] ?? '',
+        },
+      ].slice(-15);
+
+      setStrategyHistory(updatedHistory);
+      setReplayHistory(updatedReplay);
+      void computeStrategyScore(updatedHistory, 'ai').then((feedback) => {
+        setStrategyFeedback(feedback);
+        try {
+          window.localStorage.setItem('hacklens_strategy_insights', JSON.stringify(feedback.insights));
+        } catch {
+          // Ignore storage errors.
+        }
+      });
+
       setIsSimulating(false);
     }, 800);
   };
@@ -218,10 +367,14 @@ export function TryAttackSandbox({ demo }: TryAttackSandboxProps) {
   };
 
   const coach = result?.evaluation
-    ? deriveAttackCoach(
-        input,
-        result.evaluation.classification,
-        result.evaluation.reasoning
+    ? applyWeakAreaHintBias(
+        deriveAttackCoach(
+          input,
+          result.evaluation.classification,
+          result.evaluation.reasoning
+        ),
+        userWeakAreas,
+        demo.type
       )
     : null;
 
@@ -387,6 +540,104 @@ export function TryAttackSandbox({ demo }: TryAttackSandboxProps) {
                   <p className="mt-1 text-sm text-muted-foreground">{coach.next}</p>
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {strategyFeedback && (
+        <div className="rounded-md border border-blue-500/30 bg-blue-900/10 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-300">🧠 Strategy Feedback</p>
+          <p className="mt-1 text-sm text-foreground">Score: {strategyFeedback.score}/100</p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {strategyFeedback.insights.map((insight) => (
+              <li key={insight} className="flex gap-2">
+                <span className="text-blue-300">•</span>
+                <span>{insight}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {result && replayTimeline.length > 0 && (
+        <div className="rounded-md border border-border/60 bg-background/40 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">🎮 Session Replay</p>
+            <button
+              type="button"
+              onClick={() => {
+                setReplayOpen((prev) => !prev);
+                if (!replayOpen) {
+                  setReplayCursor(0);
+                  setReplayPlaying(false);
+                }
+              }}
+              className="rounded-md border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs text-foreground hover:bg-secondary/40"
+            >
+              ▶️ Replay Attack
+            </button>
+          </div>
+
+          {replayOpen && (
+            <div className="mt-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplayCursor(0);
+                    setReplayPlaying(true);
+                  }}
+                  className="rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary"
+                >
+                  {replayPlaying ? 'Playing...' : 'Play'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReplayPlaying(false)}
+                  className="rounded-md border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs text-foreground"
+                >
+                  Pause
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplayPlaying(false);
+                    setReplayCursor(0);
+                  }}
+                  className="rounded-md border border-border/60 bg-secondary/20 px-2.5 py-1 text-xs text-foreground"
+                >
+                  Reset
+                </button>
+
+                <div className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-secondary/20 p-1">
+                  {(['slow', 'normal', 'fast'] as const).map((speed) => (
+                    <button
+                      key={speed}
+                      type="button"
+                      onClick={() => setReplaySpeed(speed)}
+                      className={`rounded px-2 py-1 text-[11px] capitalize ${
+                        replaySpeed === speed ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {speed}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {replayTimeline.slice(0, Math.max(replayCursor, 1)).map((entry) => (
+                  <div key={`${entry.stepIndex}-${entry.userAction}`} className="rounded-md border border-border/60 bg-secondary/20 p-2 text-xs">
+                    <p className="font-medium text-foreground">Step {entry.stepIndex}</p>
+                    <p className="mt-1 text-muted-foreground">User action: {entry.userAction}</p>
+                    <p className="mt-1 text-muted-foreground">Attacker response: {entry.attackerResponse}</p>
+                    {entry.narration && (
+                      <p className="mt-1 text-muted-foreground">Narration: {entry.narration}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
