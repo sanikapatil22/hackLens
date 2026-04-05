@@ -53,6 +53,22 @@ pnpm install
 pnpm dev
 ```
 
+### Database Setup (Optional, Recommended)
+
+The app supports hybrid user tracking:
+- Database-first with PostgreSQL when `DATABASE_URL` is configured.
+- Automatic local fallback on the client when database access fails.
+
+1. Copy environment values from `.env.example` into `.env.local`.
+2. Set `DATABASE_URL` to your PostgreSQL connection string.
+3. Initialize tables and indexes:
+
+```bash
+pnpm db:init
+```
+
+If PostgreSQL is unavailable, the simulation experience still works using client-side storage fallback.
+
 Open [http://localhost:3000](http://localhost:3000) to start learning!
 
 ### How to Use

@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
     }
 
     const analysis = await performLightweightAnalysis(parsed.data.url);
-    logApi('/api/analyze', 'success', { source: 'service' });
+    logApi('/api/analysis', 'success', { source: 'service' });
     return NextResponse.json(analysis);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to analyze website';
     const status = message.toLowerCase().includes('invalid') || message.toLowerCase().includes('could not reach') ? 400 : 500;
-    logApi('/api/analyze', 'error', { error: message, status });
+    logApi('/api/analysis', 'error', { error: message, status });
     if (status === 400) {
       return NextResponse.json({ error: message }, { status: 400 });
     }

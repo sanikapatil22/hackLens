@@ -1,5 +1,6 @@
 import { SecurityFinding } from '@/types/security';
 import { NextRequest, NextResponse } from 'next/server';
+import { logApi } from '@/lib/server/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -283,6 +284,9 @@ document.textContent = userName; // Safe for text content`,
       summary: `Found ${findings.length} potential security issues in your HTML file.`,
     });
   } catch (error) {
+    logApi('/api/analyze-html', 'error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return NextResponse.json(
       { error: 'Failed to analyze HTML: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }

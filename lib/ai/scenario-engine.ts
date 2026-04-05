@@ -2,6 +2,8 @@ import { getCachedScenario } from "./scenario-generator";
 import { generateScenarioWithLLM } from "./llm-client";
 import { canMakeAIRequest, getCooldownTime } from "./rate-limiter";
 import type { Scenario, ScenarioParams } from "./scenario-types";
+import { getCache, setCache } from "../server/cache";
+import { log } from "../server/logger";
 
 type ScenarioMode = "demo" | "live";
 
@@ -10,10 +12,8 @@ const DEFAULT_PARAMS: ScenarioParams = {
   difficulty: "easy",
 };
 
-const aiCache = new Map<string, Scenario>();
-
 function getAiCacheKey(params: ScenarioParams): string {
-  return `${params.type}-${params.difficulty}`;
+  return `scenario-ai-${params.type}-${params.difficulty}`;
 }
 
 function withMeta(
@@ -58,30 +58,40 @@ export async function generateScenario(
   }
 
   if (typeof window !== "undefined") {
-    console.warn("Live AI generation is server-side only, using cached AI");
+    log("warn", "scenario_engine_server_only_live_mode", {
+      type: params.type,
+      difficulty: params.difficulty,
+    });
     return withMeta(resolveScenario(params), params, "cached");
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    console.warn("No API key found, using cached AI");
+    log("warn", "scenario_engine_missing_api_key_fallback", {
+      type: params.type,
+      difficulty: params.difficulty,
+    });
     return withMeta(resolveScenario(params), params, "cached");
   }
 
   const cacheKey = getAiCacheKey(params);
-  const cachedAiScenario = aiCache.get(cacheKey);
+  const cachedAiScenario = getCache<Scenario>(cacheKey);
   if (cachedAiScenario) {
     return withMeta(cachedAiScenario, params, "ai");
   }
 
   if (!canMakeAIRequest()) {
     const cooldown = getCooldownTime();
-    console.warn(`Rate limit exceeded, falling back${cooldown > 0 ? ` (${cooldown}s cooldown)` : ""}`);
+    log("warn", "scenario_engine_rate_limit_fallback", {
+      type: params.type,
+      difficulty: params.difficulty,
+      cooldown,
+    });
     return withMeta(resolveScenario(params), params, "cached");
   }
 
   try {
     const generated = await generateScenarioWithLLM(params);
-    aiCache.set(cacheKey, generated);
+    setCache(cacheKey, generated);
     return withMeta(generated, params, "ai");
   } catch {
     return withMeta(resolveScenario(params), params, "cached");
